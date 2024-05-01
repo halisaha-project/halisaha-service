@@ -1,0 +1,30 @@
+@BASE_URL = http://localhost:3000/api
+
+
+GET {{BASE_URL}}
+###
+GET {{BASE_URL}}/users
+###
+GET {{BASE_URL}}/users/662acfac3e0527c1c5a6b16f
+###
+POST {{BASE_URL}}/users
+Content-Type: application/json
+
+{
+    "nameSurname": "Eren Yavaş",
+    "username": "erenyavas",
+    "email": "eren@gmail.com",
+    "password": "1234"
+}
+###
+PATCH  {{BASE_URL}}/users/662acf963e0527c1c5a6b16d
+Content-Type: application/json
+
+{
+    "nameSurname": "test tasdfasdfasdfasfdasdfsadestasdt",
+    "username": "tessadftASDasd",
+    "email": "test@tesadst.ASDADasdfasdfasdfasdfacasdom",
+    "password": "test12asdfasdfasfdasdfasdfsd3"
+}
+###
+DELETE {{BASE_URL}}/users/662acf963e0527c1c5a6b16d

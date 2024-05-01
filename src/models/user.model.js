@@ -30,21 +30,6 @@ const UserSchema = new Schema({
 
 }, { collection: 'users', timestamps: true });
 
-UserSchema.statics.login = async (email, password) => {
-    const user = await User.findOne({ email });
-    if (!user) {
-        throw new Error("InvalidInfo")
-    }
-
-    const passCheck = await bcrypt.compare(password, user.password)
-    if (!passCheck) {
-        throw new Error("InvalidInfo")
-    }
-    return user
-}
-
-
-
 const User = mongoose.model('User', UserSchema)
 
 module.exports = User

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
-
-mongoose.connect('mongodb://127.0.0.1:27017/halisaha')
+mongoose.connect(process.env.DB_URL)
     .then(() => {
         console.log("Database connection is successful.");
     })
