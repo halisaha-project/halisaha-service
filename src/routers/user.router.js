@@ -1,8 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const { getAllUsers, getUserById, createNewUser, updateUserById, deleteUserById } = require('../controllers/user.controller')
+const { getAllUsers, getUserById, createNewUser, updateUserById, deleteUser, profile } = require('../controllers/user.controller')
+const { checkToken } = require('../middlewares/auth.middleware')
 
 
+//ME
+router.get('/profile', checkToken, profile)
 
 //READ ALL
 router.get('/', getAllUsers)
@@ -17,7 +20,9 @@ router.post('/', createNewUser)
 router.patch('/:id', updateUserById)
 
 //DELETE
-router.delete('/:id', deleteUserById)
+router.delete('/:id', checkToken, deleteUser)
+
+
 
 
 module.exports = router

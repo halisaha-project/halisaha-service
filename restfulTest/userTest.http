@@ -1,7 +1,9 @@
 @BASE_URL = http://localhost:3000/api
 
+@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjMyNDM1OGE3OGU3YzFjNjVkMTY5ZGQiLCJpYXQiOjE3MTQ1NzczNDYsImV4cCI6MTcxNTE4MjE0Nn0.coMqAqtxuYfpsoukAh7YZR7LC4wi_0k_9dM4NOMyhaRav_mMRsv_OPty1hJiG_Ud_mpqJcnViGWvKaBKp44DQg
 
-GET {{BASE_URL}}
+
+GET http://localhost:3000
 ###
 GET {{BASE_URL}}/users
 ###
@@ -28,3 +30,14 @@ Content-Type: application/json
 }
 ###
 DELETE {{BASE_URL}}/users/662acf963e0527c1c5a6b16d
+###
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "eren@gmail.com",
+    "password": "1234"
+}
+###
+GET {{BASE_URL}}/users/profile
+Authorization: {{TOKEN}}ss

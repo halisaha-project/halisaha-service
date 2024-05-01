@@ -1,4 +1,3 @@
-require('express-async-errors')
 const User = require('../models/user.model')
 const bcrypt = require('bcrypt')
 const APIError = require('../utils/errors')
@@ -53,9 +52,9 @@ const updateUserById = async (req, res) => {
 
 }
 
-const deleteUserById = async (req, res) => {
+const deleteUser = async (req, res) => {
 
-    const deletedUser = await User.findByIdAndDelete(req.params.id)
+    const deletedUser = await User.findByIdAndDelete(req.user._id)
     if (deletedUser) {
         return new Response(deletedUser).success(res)
     } else {
@@ -64,6 +63,12 @@ const deleteUserById = async (req, res) => {
 
 }
 
+
+const profile = async (req, res) => {
+    console.log("burdayım")
+    return new Response(req.user).success(res)
+}
+
 module.exports = {
-    getAllUsers, getUserById, createNewUser, updateUserById, deleteUserById
+    getAllUsers, getUserById, createNewUser, updateUserById, deleteUser, profile
 }
