@@ -1,4 +1,4 @@
-const APIError = require('../utils/errors')
+const APIError = require('../utils/error.util')
 
 
 const errorHandleMiddleware = (err, req, res, next) => {
@@ -10,7 +10,7 @@ const errorHandleMiddleware = (err, req, res, next) => {
     } else {
         return res.status(500).json({
             success: false,
-            message: `API Error: ${err.message}`
+            message: `Internal Error: ${err.message}`
         })
     }
 }

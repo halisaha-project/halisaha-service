@@ -1,6 +1,6 @@
 @BASE_URL = http://localhost:3000/api
 
-@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjMyNDM1OGE3OGU3YzFjNjVkMTY5ZGQiLCJpYXQiOjE3MTQ1NzczNDYsImV4cCI6MTcxNTE4MjE0Nn0.coMqAqtxuYfpsoukAh7YZR7LC4wi_0k_9dM4NOMyhaRav_mMRsv_OPty1hJiG_Ud_mpqJcnViGWvKaBKp44DQg
+@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM2MWNhNGJjMDcxOWNlZGRhOWJiOTYiLCJpYXQiOjE3MTQ4MjIzMzYsImV4cCI6MTcxNTQyNzEzNn0.yaGgLmoqE_9Q_N6c9h6-TSt4vSFEJdNMWOFUjwVgekdXci7TpNaq9zsvChPSw1Ix4v_qtir_3m3Ky_aSOw5ujg
 
 
 GET http://localhost:3000
@@ -16,20 +16,22 @@ Content-Type: application/json
     "nameSurname": "Eren Yavaş",
     "username": "erenyavas",
     "email": "eren@gmail.com",
-    "password": "1234"
+    "password": "1234",
+    "verificationCode":"123456"
 }
 ###
 PATCH  {{BASE_URL}}/users/662acf963e0527c1c5a6b16d
 Content-Type: application/json
 
 {
-    "nameSurname": "test tasdfasdfasdfasfdasdfsadestasdt",
-    "username": "tessadftASDasd",
-    "email": "test@tesadst.ASDADasdfasdfasdfasdfacasdom",
+    "nameSurname": "Eren Yavaş",
+    "username": "erenyavas",
+    "email": "eerenyavas@",
     "password": "test12asdfasdfasfdasdfasdfsd3"
 }
 ###
-DELETE {{BASE_URL}}/users/662acf963e0527c1c5a6b16d
+DELETE {{BASE_URL}}/users/
+Authorization: {{TOKEN}}
 ###
 POST {{BASE_URL}}/auth/login
 Content-Type: application/json
@@ -40,4 +42,27 @@ Content-Type: application/json
 }
 ###
 GET {{BASE_URL}}/users/profile
-Authorization: {{TOKEN}}ss
+Authorization: {{TOKEN}}
+
+
+###
+POST {{BASE_URL}}/auth/register
+Content-Type: application/json
+
+{
+    "nameSurname":"Eren Yavaş",
+    "username":"erenyavas",
+    "email": "eerenyavas1@gmail.com",
+    "password": "12345678"
+}
+
+###
+POST {{BASE_URL}}/auth/confirmMail
+Content-Type: application/json
+
+{
+    "token":"eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM2OTU1MjliZGQ4MjM1N2I5ZTliOWYiLCJuYW1lU3VybmFtZSI6IkVyZW4gWWF2YcWfIiwiZW1haWwiOiJlZXJlbnlhdmFzQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiZXJlbnlhdmFzMSIsImlhdCI6MTcxNDg1MzIwMywiZXhwIjoxNzE0ODUzNTAzfQ.Jy9wrtI1ZEPhUFI3f0Y4ge-O3vBH7gIxvcY-Jv4IUxlgV352rKTdpEEqk9CG-uNnjCEMrz9p7P1jmg036bnihw",
+    "verificationCode": "428481"
+}
+
+

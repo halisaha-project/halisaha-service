@@ -20,7 +20,7 @@ router.post('/', createNewUser)
 router.patch('/:id', updateUserById)
 
 //DELETE
-router.delete('/:id', checkToken, deleteUser)
+router.delete('/', checkToken, deleteUser)
 
 
 

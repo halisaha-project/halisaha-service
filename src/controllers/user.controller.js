@@ -1,7 +1,7 @@
 const User = require('../models/user.model')
 const bcrypt = require('bcrypt')
-const APIError = require('../utils/errors')
-const Response = require('../utils/response')
+const APIError = require('../utils/error.util')
+const Response = require('../utils/response.util')
 
 const getAllUsers = async (req, res) => {
     const users = await User.find({})
@@ -56,7 +56,7 @@ const deleteUser = async (req, res) => {
 
     const deletedUser = await User.findByIdAndDelete(req.user._id)
     if (deletedUser) {
-        return new Response(deletedUser).success(res)
+        return new Response(deletedUser, 200, "User deleted successfully.").success(res)
     } else {
         throw new APIError("User not found.", 404)
     }
