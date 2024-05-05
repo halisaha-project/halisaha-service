@@ -45,18 +45,33 @@ const updateGroupById = async (req, res) => {
 };
 
 const deleteGroup = async (req, res) => {
-    const { id } = req.params;
+    const groupId = req.params.id;
+    const currentUserId = req.user.id;
+
     try {
-        const deletedGroup = await Group.findByIdAndDelete(id);
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({ error: 'Group not found' });
+        }
+
+        if (group.createdBy.toString() !== currentUserId) {
+            return res.status(403).json({ error: 'You do not have permission to delete this group' });
+        }
+
+        const deletedGroup = await Group.findByIdAndDelete(groupId);
+
         if (!deletedGroup) {
             return res.status(404).json({ error: 'Group not found' });
         }
-        res.status(200).json({ message: 'Group deleted successfully' });
+
+        return res.status(200).json({ message: 'Group deleted successfully' });
     } catch (error) {
         console.error('Error while deleting group by id:', error);
-        res.status(500).json({ error: 'An error occurred while deleting group' });
+        return res.status(500).json({ error: 'An error occurred while deleting group' });
     }
 };
+
 
 
 const createNewGroup = async (req, res) => {
@@ -137,6 +152,33 @@ const joinGroup = async (req, res) => {
     
 };
 
+const leaveGroup = async (req, res) => {
+    const { userId, groupId } = req.body;
+    const currentUserId = req.user.id;
+    
+    try {
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).send('Group not found');
+        }
+
+        
+        if (group.createdBy.toString() === currentUserId || userId === currentUserId) {
+            group.members = group.members.filter(member => member.user.toString() !== userId);
+            await group.save();
+            
+            return res.status(200).send('User left the group successfully');
+        } else {
+            return res.status(403).send('You do not have permission to remove this user from the group');
+        }
+    } catch (err) {
+        console.error('An error occurred while trying to leave the group.', err);
+        res.status(500).send('An error occurred while trying to leave the group.');
+    }
+};
+
+
 module.exports = {
     getAllGroups,
     getGroupById,
@@ -145,5 +187,6 @@ module.exports = {
     deleteGroup,
     createNewGroup,
     joinGroup,
-    createGroupInvitationLink
+    createGroupInvitationLink,
+    leaveGroup
 };

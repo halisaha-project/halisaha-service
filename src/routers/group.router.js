@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGroups, getGroupById, createNewGroup, updateGroupById, deleteGroup, joinGroup, createGroupInvitationLink } = require('../controllers/group.controller');
+const { getAllGroups,leaveGroup, getGroupById, createNewGroup, updateGroupById, deleteGroup, joinGroup, createGroupInvitationLink } = require('../controllers/group.controller');
 const { checkToken } = require('../middlewares/auth.middleware');
 
 // READ ALL GROUPS
@@ -23,5 +23,8 @@ router.patch('/:id', updateGroupById);
 
 // DELETE GROUP BY ID
 router.delete('/:id', checkToken, deleteGroup);
+
+// LEAVE GROUP OR KICK GROUP
+router.post('/leave', checkToken, leaveGroup);
 
 module.exports = router;
