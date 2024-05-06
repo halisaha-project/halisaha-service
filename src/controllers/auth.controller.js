@@ -10,10 +10,11 @@ const { sendVerificationEmail } = require('../utils/email.util')
 const login = async (req, res) => {
     const { email, password } = req.body
 
-    const user = await User.findOne({ email })
+    const user = await User.find({ email, isVerified: true })
     if (!user) {
         throw new APIError("Invalid email or password.", 401)
     }
+
 
     const passCheck = await bcrypt.compare(password, user.password)
     if (!passCheck) {
