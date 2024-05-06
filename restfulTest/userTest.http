@@ -1,21 +1,92 @@
 @BASE_URL = http://localhost:3000/api
 
-@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM2MWNhNGJjMDcxOWNlZGRhOWJiOTYiLCJpYXQiOjE3MTQ4MjIzMzYsImV4cCI6MTcxNTQyNzEzNn0.yaGgLmoqE_9Q_N6c9h6-TSt4vSFEJdNMWOFUjwVgekdXci7TpNaq9zsvChPSw1Ix4v_qtir_3m3Ky_aSOw5ujg
+@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM3ZWUyN2IzYzFlYjNjMDZjZDExMWQiLCJuYW1lU3VybmFtZSI6IkJlZGlyaGFuIFR1cmhhbiIsImVtYWlsIjoiYmVkb0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6ImJlZG90dXJoYW4iLCJpYXQiOjE3MTQ5NDM4MDAsImV4cCI6MTcxNDk0Mzg4Nn0.It4BdxbT1I1qa5Ks0hboHVbneGNgvUcwlUt1xtjAz48FsZ9wC16i-Er2w0-J8PpR5Z078WBjYdFxUu4xZtiOwg
 
+###
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "bedo@gmail.com",
+    "password": "1234"
+}
+###
+GET {{BASE_URL}}/users/profile
+Authorization: {{TOKEN}}
+
+###
+DELETE {{BASE_URL}}/groups/6637f223c19026a4126efda1
+Authorization: {{TOKEN}}
+
+
+###
 
 GET http://localhost:3000
+###
+GET {{BASE_URL}}/groups
 ###
 GET {{BASE_URL}}/users
 ###
 GET {{BASE_URL}}/users/662acfac3e0527c1c5a6b16f
 ###
+
+POST {{BASE_URL}}/groups/join
+Content-Type: application/json
+Authorization: {{TOKEN}}
+
+{
+    "invitationToken": "1e5fa0cd60108ad64c37fdd1cb6b65fe6e0374d0",
+    "position":"Defender",
+    "shirtNumber": 2
+}
+
+###
+POST {{BASE_URL}}/groups/leave
+Content-Type: application/json
+Authorization: {{TOKEN}}
+
+{
+    "userId": "6637ee27b3c1eb3c06cd111d",
+    "groupId": "6637f6fdbd2b0d157a8c5328"
+}
+
+###
+POST {{BASE_URL}}/groups/invite
+Content-Type: application/json
+Authorization: {{TOKEN}}
+
+{
+    "groupId": "6637f6fdbd2b0d157a8c5328"
+}
+
+###
+POST {{BASE_URL}}/groups
+Content-Type: application/json
+Authorization: {{TOKEN}}
+
+{
+  "groupName": "Avcilar IU Halisaha",
+  "members": [
+     {
+      "user": "6637ee27b3c1eb3c06cd111d", 
+      "position": "Defender", 
+      "shirtNumber": 2
+    }
+   
+  ]
+}
+
+
+
+###
+
 POST {{BASE_URL}}/users
 Content-Type: application/json
 
 {
-    "nameSurname": "Eren Yavaş",
-    "username": "erenyavas",
-    "email": "eren@gmail.com",
+    "nameSurname": "Bedirhan Turhan",
+    "username": "bedoturhan",
+    "email": "bedo@gmail.com",
     "password": "1234",
     "verificationCode":"123456"
 }
@@ -29,22 +100,6 @@ Content-Type: application/json
     "email": "eerenyavas@",
     "password": "test12asdfasdfasfdasdfasdfsd3"
 }
-###
-DELETE {{BASE_URL}}/users/
-Authorization: {{TOKEN}}
-###
-POST {{BASE_URL}}/auth/login
-Content-Type: application/json
-
-{
-    "email": "eren@gmail.com",
-    "password": "1234"
-}
-###
-GET {{BASE_URL}}/users/profile
-Authorization: {{TOKEN}}
-
-
 ###
 POST {{BASE_URL}}/auth/register
 Content-Type: application/json
