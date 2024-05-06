@@ -101,6 +101,26 @@ Content-Type: application/json
     "password": "test12asdfasdfasfdasdfasdfsd3"
 }
 ###
+
+DELETE {{BASE_URL}}/users/
+Authorization: {{TOKEN}}
+###
+# @name login
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "eren@gmail.com",
+    "password": "1234"
+}
+
+###
+@authToken = {{login.response.body.data}}
+GET {{BASE_URL}}/users/profile
+Authorization: Bearer {{authToken}}
+
+
+###
 POST {{BASE_URL}}/auth/register
 Content-Type: application/json
 
