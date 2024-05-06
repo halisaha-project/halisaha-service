@@ -1,6 +1,6 @@
 @BASE_URL = http://localhost:3000/api
 
-@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM3ZWUyN2IzYzFlYjNjMDZjZDExMWQiLCJuYW1lU3VybmFtZSI6IkJlZGlyaGFuIFR1cmhhbiIsImVtYWlsIjoiYmVkb0BnbWFpbC5jb20iLCJ1c2VybmFtZSI6ImJlZG90dXJoYW4iLCJpYXQiOjE3MTQ5NDM4MDAsImV4cCI6MTcxNDk0Mzg4Nn0.It4BdxbT1I1qa5Ks0hboHVbneGNgvUcwlUt1xtjAz48FsZ9wC16i-Er2w0-J8PpR5Z078WBjYdFxUu4xZtiOwg
+@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM4OGYyZTM0MGI3OGNjMTYzMzk2MDIiLCJuYW1lU3VybmFtZSI6IkVyZW4gWWF2YcWfIiwiZW1haWwiOiJlZXJlbnlhdmFzQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiZXJlbnlhdmFzIiwiaWF0IjoxNzE0OTgyNzg0LCJleHAiOjE3MTU1ODc1ODR9.bHqzcrt0XcoY9J2Y4AAFJgr6qQUicC4TWr9H8UvFOPHpPxPXbwBcygqnCiUhxOWFvpSayARjFnBAkhIFDdurIQ
 
 ###
 POST {{BASE_URL}}/auth/login
@@ -110,8 +110,8 @@ POST {{BASE_URL}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "eren@gmail.com",
-    "password": "1234"
+    "email": "eerenyavas@gmail.com",
+    "password": "12345678"
 }
 
 ###
@@ -127,7 +127,7 @@ Content-Type: application/json
 {
     "nameSurname":"Eren Yavaş",
     "username":"erenyavas",
-    "email": "eerenyavas1@gmail.com",
+    "email": "eerenyavas@gmail.com",
     "password": "12345678"
 }
 

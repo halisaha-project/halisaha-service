@@ -1,0 +1,23 @@
+@BASE_URL = http://localhost:3000/api
+
+###
+# @name login
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "eerenyavas@gmail.com",
+    "password": "12345678"
+}
+
+##############
+@authToken = {{login.response.body.data}}
+
+GET {{BASE_URL}}/users/profile
+Authorization: Bearer {{authToken}}
+
+
+#############
+@authToken = {{login.response.body.data}}
+
+GET {{BASE_URL}}/matches/byGroup

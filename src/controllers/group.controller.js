@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const Group = require('../models/group.model');
-const GroupInvitation= require('../models/invitegroup.model');
+const GroupInvitation = require('../models/invitegroup.model');
 
 
 const getAllGroups = async (req, res) => {
@@ -75,8 +75,8 @@ const deleteGroup = async (req, res) => {
 
 
 const createNewGroup = async (req, res) => {
-    const { groupName,members} = req.body;
-    const createdBy = req.user.id; 
+    const { groupName, members } = req.body;
+    const createdBy = req.user.id;
 
     try {
         const newGroup = new Group({
@@ -96,7 +96,7 @@ const createNewGroup = async (req, res) => {
 
 
 const createGroupInvitationLink = async (req, res) => {
-    const groupId = req.body.groupId; 
+    const groupId = req.body.groupId;
     const token = crypto.randomBytes(20).toString('hex');
 
     try {
@@ -105,7 +105,7 @@ const createGroupInvitationLink = async (req, res) => {
         const newInvitation = new GroupInvitation({
             groupId: groupId,
             token: token,
-            expireAt: new Date(Date.now() + 60 * 60 * 1000) 
+            expireAt: new Date(Date.now() + 60 * 60 * 1000)
         });
 
         const savedInvitation = await newInvitation.save();
@@ -117,45 +117,45 @@ const createGroupInvitationLink = async (req, res) => {
 };
 
 const joinGroup = async (req, res) => {
-    const userId = req.user.id; 
-    const { invitationToken , position, shirtNumber} = req.body; 
+    const userId = req.user.id;
+    const { invitationToken, position, shirtNumber } = req.body;
 
-    
 
-        const invitation = await GroupInvitation.findOne({ token: invitationToken });
 
-        if (!invitation) {
-            return res.status(404).send('Invalid invitation link');
-        }
+    const invitation = await GroupInvitation.findOne({ token: invitationToken });
 
-        if (invitation.expireAt < new Date()) {
-            return res.status(400).send('Invitation link has expired');
-        }
+    if (!invitation) {
+        return res.status(404).send('Invalid invitation link');
+    }
 
-        const group = await Group.findById(invitation.groupId);
+    if (invitation.expireAt < new Date()) {
+        return res.status(400).send('Invitation link has expired');
+    }
 
-        if (!group) {
-            return res.status(404).send('Group not found');
-        }
-        const userInGroup = group.members.some(member => member.user.toString() === userId);
+    const group = await Group.findById(invitation.groupId);
 
-      
-        if (userInGroup) {
-            return res.status(400).send('You are already a member of this group');
-        }
+    if (!group) {
+        return res.status(404).send('Group not found');
+    }
+    const userInGroup = group.members.some(member => member.user.toString() === userId);
 
-        group.members.push({ user: userId , position: position, shirtNumber: shirtNumber });
-        await group.save();
 
-        res.status(200).send('Joined the group successfully');
-   
-    
+    if (userInGroup) {
+        return res.status(400).send('You are already a member of this group');
+    }
+
+    group.members.push({ user: userId, position: position, shirtNumber: shirtNumber });
+    await group.save();
+
+    res.status(200).send('Joined the group successfully');
+
+
 };
 
 const leaveGroup = async (req, res) => {
     const { userId, groupId } = req.body;
     const currentUserId = req.user.id;
-    
+
     try {
         const group = await Group.findById(groupId);
 
@@ -163,11 +163,11 @@ const leaveGroup = async (req, res) => {
             return res.status(404).send('Group not found');
         }
 
-        
+
         if (group.createdBy.toString() === currentUserId || userId === currentUserId) {
             group.members = group.members.filter(member => member.user.toString() !== userId);
             await group.save();
-            
+
             return res.status(200).send('User left the group successfully');
         } else {
             return res.status(403).send('You do not have permission to remove this user from the group');
