@@ -20,4 +20,5 @@ Authorization: Bearer {{authToken}}
 #############
 @authToken = {{login.response.body.data}}
 
-GET {{BASE_URL}}/matches/byGroup
+GET {{BASE_URL}}/matches/byGroup/662e4efb220b81d6b2fb714b
+Authorization: Bearer {{authToken}}
