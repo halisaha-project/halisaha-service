@@ -1,41 +1,46 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose')
+const Schema = mongoose.Schema
 
-const MatchSchema = new Schema({
+const MatchSchema = new Schema(
+  {
     matchDate: {
-        type: Date,
-        required: true
+      type: Date,
+      required: true,
     },
     createdGroupId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Group',
-        required: true
+      type: Schema.Types.ObjectId,
+      ref: 'Group',
+      required: true,
     },
-    lineup: [{
+    lineup: [
+      {
         user: {
-            type: Schema.Types.ObjectId,
-            ref: 'User'
+          type: Schema.Types.ObjectId,
+          ref: 'User',
         },
         position: {
-            type: Schema.Types.ObjectId,
-            ref: 'Position'
+          type: Schema.Types.ObjectId,
+          ref: 'Position',
         },
         hasVoted: {
-            type: Boolean,
-            default: false
-        }
-    }],
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
     location: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     matchType: {
-        type: String,
-        enum: ['8v8' ,'7v7', '6v6', '5v5'], 
-        required: true
-    }
-}, { collection: 'matches', timestamps: true });
+      type: String,
+      enum: ['8v8', '7v7', '6v6', '5v5'],
+      required: true,
+    },
+  },
+  { collection: 'matches', timestamps: true }
+)
 
-const Match = mongoose.model('Match', MatchSchema);
+const Match = mongoose.model('Match', MatchSchema)
 
-module.exports = Match;
+module.exports = Match
