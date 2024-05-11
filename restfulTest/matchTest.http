@@ -1,6 +1,6 @@
 @BASE_URL = http://localhost:3000/api
 
-###
+### LOGIN
 # @name login
 POST {{BASE_URL}}/auth/login
 Content-Type: application/json
@@ -10,15 +10,34 @@ Content-Type: application/json
     "password": "12345678"
 }
 
-##############
+### PROFILE
 @authToken = {{login.response.body.data}}
-
 GET {{BASE_URL}}/users/profile
 Authorization: Bearer {{authToken}}
 
-
-#############
+### CREATE MATCH
 @authToken = {{login.response.body.data}}
+POST {{BASE_URL}}/matches
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
+{
+    "groupId": "663e9a880e7f85f441b17fc1",
+    "players": [
+        "663e94d90e7f85f441b17f80",
+        "663e94d90e7f85f441b17f81",
+        "663e94d90e7f85f441b17f82",
+        "663e94d90e7f85f441b17f83",
+        "663e94d90e7f85f441b17f84",
+        "663e94d90e7f85f441b17f85",
+        "663e94d90e7f85f441b17f86"
+    ],
+    "formation": "3-1-2",
+    "matchDate": "2024-05-20T22:07:04.040+00:00",
+    "location": "Olimpik"
+}
+
+### GET MATCHES BY GROUP
+@authToken = {{login.response.body.data}}
 GET {{BASE_URL}}/matches/byGroup/662e4efb220b81d6b2fb714b
 Authorization: Bearer {{authToken}}
