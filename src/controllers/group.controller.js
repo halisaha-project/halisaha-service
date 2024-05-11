@@ -1,15 +1,19 @@
 const crypto = require('crypto')
 const Group = require('../models/group.model')
 const GroupInvitation = require('../models/invitegroup.model')
-const Position = require('../models/position.model')
+const Response = require('../utils/response.util')
 
 const getAllGroups = async (req, res) => {
   try {
     const groups = await Group.find()
-    res.status(200).json(groups)
+    return new Response(groups).success(res)
   } catch (error) {
     console.error('Error while getting all groups:', error)
-    res.status(500).json({ error: 'An error occurred while fetching groups' })
+    return new Response(
+      null,
+      500,
+      'An error occurred while fetching groups'
+    ).success(res)
   }
 }
 
@@ -18,12 +22,16 @@ const getGroupById = async (req, res) => {
   try {
     const group = await Group.findById(id)
     if (!group) {
-      return res.status(404).json({ error: 'Group not found' })
+      return new Response(null, 404, 'Group not found').success(res)
     }
-    res.status(200).json(group)
+    return new Response(group).success(res)
   } catch (error) {
     console.error('Error while getting group by id:', error)
-    res.status(500).json({ error: 'An error occurred while fetching group' })
+    return new Response(
+      null,
+      500,
+      'An error occurred while fetching group'
+    ).success(res)
   }
 }
 
@@ -37,12 +45,16 @@ const updateGroupById = async (req, res) => {
       { new: true }
     )
     if (!updatedGroup) {
-      return res.status(404).json({ error: 'Group not found' })
+      return new Response(null, 404, 'Group not found').success(res)
     }
-    res.status(200).json(updatedGroup)
+    return new Response(updatedGroup).success(res)
   } catch (error) {
     console.error('Error while updating group by id:', error)
-    res.status(500).json({ error: 'An error occurred while updating group' })
+    return new Response(
+      null,
+      500,
+      'An error occurred while updating group'
+    ).success(res)
   }
 }
 
@@ -54,27 +66,31 @@ const deleteGroup = async (req, res) => {
     const group = await Group.findById(groupId)
 
     if (!group) {
-      return res.status(404).json({ error: 'Group not found' })
+      return new Response(null, 404, 'Group not found').success(res)
     }
 
     if (group.createdBy.toString() !== currentUserId) {
-      return res
-        .status(403)
-        .json({ error: 'You do not have permission to delete this group' })
+      return new Response(
+        null,
+        403,
+        'You do not have permission to delete this group'
+      ).success(res)
     }
 
     const deletedGroup = await Group.findByIdAndDelete(groupId)
 
     if (!deletedGroup) {
-      return res.status(404).json({ error: 'Group not found' })
+      return new Response(null, 404, 'Group not found').success(res)
     }
 
-    return res.status(200).json({ message: 'Group deleted successfully' })
+    return new Response({ message: 'Group deleted successfully' }).success(res)
   } catch (error) {
     console.error('Error while deleting group by id:', error)
-    return res
-      .status(500)
-      .json({ error: 'An error occurred while deleting group' })
+    return new Response(
+      null,
+      500,
+      'An error occurred while deleting group'
+    ).success(res)
   }
 }
 
@@ -97,10 +113,14 @@ const createNewGroup = async (req, res) => {
     })
 
     const savedGroup = await newGroup.save()
-    res.status(201).json(savedGroup)
+    return new Response(savedGroup, 201).success(res)
   } catch (err) {
-    console.error('An error occured while trying to create a new group', err)
-    res.status(500).send('An error occured while trying to create a new group.')
+    console.error('An error occurred while trying to create a new group', err)
+    return new Response(
+      null,
+      500,
+      'An error occurred while trying to create a new group.'
+    ).success(res)
   }
 }
 
@@ -115,10 +135,11 @@ const createGroupInvitationLink = async (req, res) => {
       'members.user': userId,
     })
     if (!isMember) {
-      return res.status(403).json({
-        error:
-          'You are not authorized to create an invitation link for this group.',
-      })
+      return new Response(
+        null,
+        403,
+        'You are not authorized to create an invitation link for this group.'
+      ).success(res)
     }
 
     const newInvitation = new GroupInvitation({
@@ -128,15 +149,17 @@ const createGroupInvitationLink = async (req, res) => {
     })
 
     const savedInvitation = await newInvitation.save()
-    res.status(201).json(savedInvitation)
+    return new Response(savedInvitation, 201).success(res)
   } catch (err) {
     console.error(
-      'An error occured while trying to create new invite link.',
+      'An error occurred while trying to create new invite link.',
       err
     )
-    res.status(500).json({
-      error: 'An error occured while trying to create new invite link.',
-    })
+    return new Response(
+      null,
+      500,
+      'An error occurred while trying to create new invite link.'
+    ).success(res)
   }
 }
 
@@ -146,24 +169,36 @@ const joinGroup = async (req, res) => {
   const invitation = await GroupInvitation.findOne({ token: invitationToken })
 
   if (!invitation) {
-    return res.status(404).send('Invalid invitation link')
+    return new Response(null, 404, 'Invalid invitation link').success(res)
   }
 
   if (invitation.expireAt < new Date()) {
-    return res.status(400).send('Invitation link has expired')
+    return new Response(null, 400, 'Invitation link has expired').success(res)
   }
 
   const group = await Group.findById(invitation.groupId)
 
   if (!group) {
-    return res.status(404).send('Group not found')
+    return new Response(null, 404, 'Group not found').success(res)
   }
   const userInGroup = group.members.some(
     (member) => member.user.toString() === userId
   )
 
   if (userInGroup) {
-    return res.status(400).send('You are already a member of this group')
+    return new Response(
+      null,
+      400,
+      'You are already a member of this group'
+    ).success(res)
+  }
+
+  const shirtNumberTaken = group.members.some(
+    (member) => member.shirtNumber === shirtNumber
+  )
+
+  if (shirtNumberTaken) {
+    return new Response(null, 400, 'Shirt number is already taken').success(res)
   }
 
   group.members.push({
@@ -174,7 +209,7 @@ const joinGroup = async (req, res) => {
   })
   await group.save()
 
-  res.status(200).send('Joined the group successfully')
+  return new Response('Joined the group successfully').success(res)
 }
 
 const leaveGroup = async (req, res) => {
@@ -185,7 +220,7 @@ const leaveGroup = async (req, res) => {
     const group = await Group.findById(groupId)
 
     if (!group) {
-      return res.status(404).send('Group not found')
+      return new Response(null, 404, 'Group not found').success(res)
     }
 
     if (
@@ -197,15 +232,21 @@ const leaveGroup = async (req, res) => {
       )
       await group.save()
 
-      return res.status(200).send('User left the group successfully')
+      return new Response('User left the group successfully').success(res)
     } else {
-      return res
-        .status(403)
-        .send('You do not have permission to remove this user from the group')
+      return new Response(
+        null,
+        403,
+        'You do not have permission to remove this user from the group'
+      ).success(res)
     }
   } catch (err) {
     console.error('An error occurred while trying to leave the group.', err)
-    res.status(500).send('An error occurred while trying to leave the group.')
+    return new Response(
+      null,
+      500,
+      'An error occurred while trying to leave the group.'
+    ).success(res)
   }
 }
 

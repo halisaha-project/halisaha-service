@@ -1,0 +1,41 @@
+@BASE_URL = http://localhost:3000/api
+
+### LOGIN
+# @name login
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "michaeljohnson@example.com",
+    "password": "12345678"
+}
+
+###
+
+### GET GROUPS
+@authToken = {{login.response.body.data}}
+GET {{BASE_URL}}/matches/byGroup/663e9a880e7f85f441b17fc1
+Authorization: Bearer {{authToken}}
+###
+
+@authToken = {{login.response.body.data}}
+POST {{BASE_URL}}/voting/vote
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.data}}
+
+{
+  "matchId": "663ecd58583570b329783540",
+  "voterId": "663e94d90e7f85f441b17f79",
+  "votedUserId": "663e94d90e7f85f441b17f88",
+  "rating": 7.5
+}
+
+###663e94d90e7f85f441b17f80
+###663e94d90e7f85f441b17f81
+###663e94d90e7f85f441b17f82
+###663e94d90e7f85f441b17f83
+###663e94d90e7f85f441b17f84
+###663e94d90e7f85f441b17f85
+###663e94d90e7f85f441b17f86
+
+
