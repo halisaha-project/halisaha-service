@@ -1,85 +1,65 @@
 @BASE_URL = http://localhost:3000/api
 
-@TOKEN = Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM4OGYyZTM0MGI3OGNjMTYzMzk2MDIiLCJuYW1lU3VybmFtZSI6IkVyZW4gWWF2YcWfIiwiZW1haWwiOiJlZXJlbnlhdmFzQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiZXJlbnlhdmFzIiwiaWF0IjoxNzE0OTgyNzg0LCJleHAiOjE3MTU1ODc1ODR9.bHqzcrt0XcoY9J2Y4AAFJgr6qQUicC4TWr9H8UvFOPHpPxPXbwBcygqnCiUhxOWFvpSayARjFnBAkhIFDdurIQ
+### Dummy Users
+# johndoe@example.com
+# janesmith@example.com
+# alicejohnson@example.com
+# davidbrown@example.com
+# emilywilson@example.com
+# michaeljohnson@example.com
+# sarahadams@example.com
+# christopherlee@example.com
 
-###
+### REGISTER
+# @name register
+POST {{BASE_URL}}/auth/register
+Content-Type: application/json
+
+{
+    "nameSurname":"Eren Yavaş",
+    "username":"erenyavas",
+    "email": "eerenyavas@gmail.com",
+    "password": "12345678"
+}
+
+### CONFIRM MAIL
+@registerToken = {{register.response.body.data}}
+POST {{BASE_URL}}/auth/confirmMail
+Content-Type: application/json
+
+{
+    "token":"{{registerToken}}",
+    "verificationCode": "520473"
+}
+
+### LOGIN
+# @name login
 POST {{BASE_URL}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "bedo@gmail.com",
-    "password": "1234"
+    "email": "eerenyavas@gmail.com",
+    "password": "12345678"
 }
-###
+
+### PROFILE
+@authToken = {{login.response.body.data}}
 GET {{BASE_URL}}/users/profile
-Authorization: {{TOKEN}}
+Authorization: Bearer {{authToken}}
 
-###
-DELETE {{BASE_URL}}/groups/6637f223c19026a4126efda1
-Authorization: {{TOKEN}}
+### DELETE USER
+@authToken = {{login.response.body.data}}
+DELETE {{BASE_URL}}/users
+Authorization: Bearer {{authToken}}
 
 
-###
 
-GET http://localhost:3000
-###
-GET {{BASE_URL}}/groups
-###
-GET {{BASE_URL}}/users
-###
-GET {{BASE_URL}}/users/662acfac3e0527c1c5a6b16f
-###
 
-POST {{BASE_URL}}/groups/join
-Content-Type: application/json
-Authorization: {{TOKEN}}
 
-{
-    "invitationToken": "1e5fa0cd60108ad64c37fdd1cb6b65fe6e0374d0",
-    "position":"Defender",
-    "shirtNumber": 2
-}
-
-###
-POST {{BASE_URL}}/groups/leave
-Content-Type: application/json
-Authorization: {{TOKEN}}
-
-{
-    "userId": "6637ee27b3c1eb3c06cd111d",
-    "groupId": "6637f6fdbd2b0d157a8c5328"
-}
-
-###
-POST {{BASE_URL}}/groups/invite
-Content-Type: application/json
-Authorization: {{TOKEN}}
-
-{
-    "groupId": "6637f6fdbd2b0d157a8c5328"
-}
-
-###
-POST {{BASE_URL}}/groups
-Content-Type: application/json
-Authorization: {{TOKEN}}
-
-{
-  "groupName": "Avcilar IU Halisaha",
-  "members": [
-     {
-      "user": "6637ee27b3c1eb3c06cd111d", 
-      "position": "Defender", 
-      "shirtNumber": 2
-    }
-   
-  ]
-}
 
 
 
 ###
-
 POST {{BASE_URL}}/users
 Content-Type: application/json
 
@@ -100,44 +80,7 @@ Content-Type: application/json
     "email": "eerenyavas@",
     "password": "test12asdfasdfasfdasdfasdfsd3"
 }
-###
-
-DELETE {{BASE_URL}}/users/
-Authorization: {{TOKEN}}
-###
-# @name login
-POST {{BASE_URL}}/auth/login
-Content-Type: application/json
-
-{
-    "email": "eerenyavas@gmail.com",
-    "password": "12345678"
-}
-
-###
-@authToken = {{login.response.body.data}}
-GET {{BASE_URL}}/users/profile
-Authorization: Bearer {{authToken}}
 
 
-###
-POST {{BASE_URL}}/auth/register
-Content-Type: application/json
-
-{
-    "nameSurname":"Eren Yavaş",
-    "username":"erenyavas",
-    "email": "eerenyavas@gmail.com",
-    "password": "12345678"
-}
-
-###
-POST {{BASE_URL}}/auth/confirmMail
-Content-Type: application/json
-
-{
-    "token":"eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjM2OTU1MjliZGQ4MjM1N2I5ZTliOWYiLCJuYW1lU3VybmFtZSI6IkVyZW4gWWF2YcWfIiwiZW1haWwiOiJlZXJlbnlhdmFzQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiZXJlbnlhdmFzMSIsImlhdCI6MTcxNDg1MzIwMywiZXhwIjoxNzE0ODUzNTAzfQ.Jy9wrtI1ZEPhUFI3f0Y4ge-O3vBH7gIxvcY-Jv4IUxlgV352rKTdpEEqk9CG-uNnjCEMrz9p7P1jmg036bnihw",
-    "verificationCode": "428481"
-}
 
 

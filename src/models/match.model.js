@@ -12,29 +12,42 @@ const MatchSchema = new Schema(
       ref: 'Group',
       required: true,
     },
-    lineup: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
+    lineup: {
+      homeTeam: [
+        {
+          user: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+          },
+          position: {
+            type: Schema.Types.ObjectId,
+            ref: 'Position',
+          },
+          hasVoted: {
+            type: Boolean,
+            default: false,
+          },
         },
-        position: {
-          type: Schema.Types.ObjectId,
-          ref: 'Position',
+      ],
+      awayTeam: [
+        {
+          user: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+          },
+          position: {
+            type: Schema.Types.ObjectId,
+            ref: 'Position',
+          },
+          hasVoted: {
+            type: Boolean,
+            default: false,
+          },
         },
-        hasVoted: {
-          type: Boolean,
-          default: false,
-        },
-      },
-    ],
+      ],
+    },
     location: {
       type: String,
-      required: true,
-    },
-    matchType: {
-      type: String,
-      enum: ['8v8', '7v7', '6v6', '5v5'],
       required: true,
     },
   },
