@@ -6,10 +6,15 @@ const router = require('./src/routers')
 const errorHandlerMiddleware = require('./src/middlewares/errorHandler.middleware')
 const swaggerUi = require('swagger-ui-express')
 const swaggerFile = require('./swagger.json')
-
-const port = process.env.PORT
+const cors = require('cors')
 
 const app = express()
+
+// CORS
+const corsOptions = {
+  origin: 'http://localhost:5173',
+}
+app.use(cors(corsOptions))
 
 app.use(express.json())
 
@@ -25,6 +30,7 @@ app.use('/api', router)
 //Error Middleware
 app.use(errorHandlerMiddleware)
 
+const port = process.env.PORT
 app.listen(port, () => {
   console.log(`Server started on port ${port}.`)
 })
