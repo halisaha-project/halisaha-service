@@ -4,15 +4,20 @@ const GroupInvitation = require('../models/invitegroup.model')
 const Response = require('../utils/response.util')
 
 const getAllGroups = async (req, res) => {
+  const userId = req.user._id
+
   try {
-    const groups = await Group.find()
-    return new Response(groups).success(res)
+    const groups = await Group.find({
+      'members.user': userId,
+    }).exec()
+
+    return new Response(groups, 200).success(res)
   } catch (error) {
-    console.error('Error while getting all groups:', error)
+    console.error('Error while getting user groups:', error)
     return new Response(
       null,
       500,
-      'An error occurred while fetching groups'
+      'An error occurred while fetching user groups'
     ).success(res)
   }
 }
