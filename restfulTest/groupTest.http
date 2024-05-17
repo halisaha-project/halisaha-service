@@ -1,5 +1,12 @@
 @BASE_URL = http://localhost:3000/api
 
+
+
+###
+GET {{BASE_URL}}/groups
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
 ### LOGIN
 # @name login
 POST {{BASE_URL}}/auth/login

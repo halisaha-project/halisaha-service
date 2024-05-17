@@ -13,7 +13,7 @@ const {
 const { checkToken } = require('../middlewares/auth.middleware')
 
 // READ ALL GROUPS
-router.get('/', getAllGroups)
+router.get('/', checkToken, getAllGroups)
 
 // READ GROUP BY ID
 router.get('/:id', getGroupById)
