@@ -4,12 +4,20 @@ const GroupInvitation = require('../models/invitegroup.model')
 const Response = require('../utils/response.util')
 
 const getAllGroups = async (req, res) => {
-  const userId = req.user._id
+  const userId = req.user._id.toString()
 
   try {
     const groups = await Group.find({
       'members.user': userId,
-    }).exec()
+    })
+      .populate('members.mainPosition', 'abbreviation name')
+      .populate('members.altPosition', 'abbreviation name')
+
+    groups.forEach((group) => {
+      group.members = group.members.filter(
+        (member) => member.user.toString() === userId
+      )
+    })
 
     return new Response(groups, 200).success(res)
   } catch (error) {
