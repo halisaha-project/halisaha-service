@@ -118,7 +118,16 @@ const createNewGroup = async (req, res) => {
     })
 
     const savedGroup = await newGroup.save()
-    return new Response(savedGroup, 201).success(res)
+
+    const populatedGroup = await Group.findById(savedGroup._id).populate({
+      path: 'members',
+      populate: [
+        { path: 'mainPosition', select: 'abbreviation' },
+        { path: 'altPosition', select: 'abbreviation' },
+      ],
+    })
+
+    return new Response(populatedGroup, 201).success(res)
   } catch (err) {
     console.error('An error occurred while trying to create a new group', err)
     return new Response(
@@ -212,9 +221,21 @@ const joinGroup = async (req, res) => {
     altPosition: altPosition,
     shirtNumber: shirtNumber,
   })
-  await group.save()
+  const savedGroup = await group.save()
 
-  return new Response('Joined the group successfully').success(res)
+  const populatedGroup = await Group.findById(savedGroup._id).populate({
+    path: 'members',
+    populate: [
+      { path: 'mainPosition', select: 'abbreviation' },
+      { path: 'altPosition', select: 'abbreviation' },
+    ],
+  })
+
+  return new Response(
+    populatedGroup,
+    201,
+    'Joined the group successfully'
+  ).success(res)
 }
 
 const leaveGroup = async (req, res) => {
