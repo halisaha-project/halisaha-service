@@ -2,10 +2,6 @@
 
 
 
-###
-GET {{BASE_URL}}/groups
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 ### LOGIN
 # @name login
@@ -16,6 +12,16 @@ Content-Type: application/json
     "email": "michaeljohnson@example.com",
     "password": "12345678"
 }
+
+### GET ALL GROUPS BY USER
+GET {{BASE_URL}}/groups
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### GET GROUP BY GROUP ID
+GET {{BASE_URL}}/groups/663e9a880e7f85f441b17fc1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 ### CREATE GROUP
 @authToken = {{login.response.body.data}}

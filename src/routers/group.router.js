@@ -16,7 +16,7 @@ const { checkToken } = require('../middlewares/auth.middleware')
 router.get('/', checkToken, getAllGroups)
 
 // READ GROUP BY ID
-router.get('/:id', getGroupById)
+router.get('/:id', checkToken, getGroupById)
 
 // CREATE NEW GROUP
 router.post('/', checkToken, createNewGroup)
