@@ -32,8 +32,16 @@ const getAllGroups = async (req, res) => {
 
 const getGroupById = async (req, res) => {
   const { id } = req.params
+  const userId = req.user._id
   try {
-    const group = await Group.findById(id)
+    const group = await Group.findOne({
+      _id: id,
+      members: { $elemMatch: { user: userId } },
+    })
+      .populate('members.user', 'nameSurname username email')
+      .populate('members.mainPosition', 'abbreviation name')
+      .populate('members.altPosition', 'abbreviation name')
+      .populate('createdBy', 'nameSurname username email')
     if (!group) {
       return new Response(null, 404, 'Group not found').success(res)
     }
