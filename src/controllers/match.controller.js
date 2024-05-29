@@ -167,11 +167,15 @@ const getMatchesByGroupId = async (req, res) => {
 const getMatchesByUserId = async (req, res) => {
   const userId = req.user._id
 
-  const matches = await Match.find({
-    lineup: { $elemMatch: { user: userId } },
-  }).exec()
+  try {
+    const matches = await Match.find({
+      'lineup.homeTeam.user': userId,
+    }).exec()
 
-  return new Response(matches, 200).success(res)
+    return new Response(matches, 200).success(res)
+  } catch (error) {
+    return new APIError('Error fetching matches', 500).send(res)
+  }
 }
 
 const getMatchDetails = async (req, res) => {
@@ -191,11 +195,19 @@ const getMatchDetails = async (req, res) => {
       },
     })
     .populate({
-      path: 'lineup.user',
+      path: 'lineup.homeTeam.user',
       select: 'nameSurname username',
     })
     .populate({
-      path: 'lineup.position',
+      path: 'lineup.awayTeam.user',
+      select: 'nameSurname username',
+    })
+    .populate({
+      path: 'lineup.homeTeam.position',
+      select: 'name abbreviation',
+    })
+    .populate({
+      path: 'lineup.awayTeam.position',
       select: 'name abbreviation',
     })
     .exec()
