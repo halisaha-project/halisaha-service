@@ -35,8 +35,8 @@ const createMatch = async (req, res) => {
 
     const homeTeam = lineup.map((item) => {
       return {
-        user: item.player.user,
-        positionId: getPositionByAbbreviation(item.position)['_id'],
+        user: item.player,
+        position: getPositionByAbbreviation(item.position)['_id'],
       }
     })
 
@@ -169,7 +169,7 @@ const getMatchesByUserId = async (req, res) => {
 
   try {
     const matches = await Match.find({
-      'lineup.homeTeam.user': userId,
+      'lineup.homeTeam.user.user': userId,
     }).exec()
 
     return new Response(matches, 200).success(res)
@@ -185,21 +185,14 @@ const getMatchDetails = async (req, res) => {
   const matchDetails = await Match.findOne({ _id: matchId })
     .populate({
       path: 'createdGroupId',
-      populate: {
-        path: 'members',
-        populate: {
-          path: '_id',
-          model: 'User',
-          select: 'shirtNumber',
-        },
-      },
+      select: 'groupName ',
     })
     .populate({
-      path: 'lineup.homeTeam.user',
+      path: 'lineup.homeTeam.user.user',
       select: 'nameSurname username',
     })
     .populate({
-      path: 'lineup.awayTeam.user',
+      path: 'lineup.awayTeam.user.user',
       select: 'nameSurname username',
     })
     .populate({
