@@ -32,12 +32,18 @@ Authorization: Bearer {{authToken}}
         "663e94d90e7f85f441b17f85",
         "663e94d90e7f85f441b17f86"
     ],
-    "formation": "3-1-2",
+    "formation": "3-3-1",
     "matchDate": "2024-05-20T22:07:04.040+00:00",
-    "location": "Olimpik"
+    "location": "Olimpik2"
 }
 
 ### GET MATCHES BY GROUP
 @authToken = {{login.response.body.data}}
-GET {{BASE_URL}}/matches/byGroup/662e4efb220b81d6b2fb714b
+GET {{BASE_URL}}/matches/byGroup/663e9a880e7f85f441b17fc1
+Authorization: Bearer {{authToken}}
+
+
+### GET MATCH BY ID
+@authToken = {{login.response.body.data}}
+GET {{BASE_URL}}/matches/6658a63e957fdc8261e8912a
 Authorization: Bearer {{authToken}}
