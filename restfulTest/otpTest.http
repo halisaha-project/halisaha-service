@@ -1,0 +1,33 @@
+@BASE_URL = http://localhost:3000/api
+
+###
+# Kullanıcıya OTP Kodu Gönder
+###
+
+POST {{BASE_URL}}/otp/send-otp
+Content-Type: application/json
+
+{
+    "email": "johndoe@example.com"
+}
+###
+POST {{BASE_URL}}/otp/verify-otp
+Content-Type: application/json
+
+{
+    "email": "johndoe@example.com",
+    "otp": "335526"
+}
+
+
+###
+
+# Şifre Sıfırlama
+POST {{BASE_URL}}/otp/reset-password
+Content-Type: application/json
+
+{
+    "email": "johndoe@example.com",
+    "newPassword": "newpassword123"
+}
+
