@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const bcrypt = require('bcrypt')
 const Otp = require('../models/otp.model')
 const User = require('../models/user.model')
+const { sendResetPasswordEmail } = require('../utils/email.util')
 
 exports.sendOtp = async (req, res) => {
   const { email } = req.body
@@ -24,6 +25,7 @@ exports.sendOtp = async (req, res) => {
 
     // Oluşturulan OTP'yi ekrana yazdır (geliştirme amacıyla)
     console.log(`OTP for ${email}: ${otp}`)
+    // await sendResetPasswordEmail(email, otp)
 
     // Yanıt gönder
     return res
@@ -82,15 +84,11 @@ exports.resetPassword = async (req, res) => {
         .json({ success: false, message: 'Kullanıcı bulunamadı' })
     }
 
-    // Doğrulama kodunu kontrol et
-
     // Yeni şifreyi hash'le
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 
     // Kullanıcının şifresini güncelle
     user.password = hashedPassword
-    user.isVerified = true // Kullanıcı artık doğrulanmıştır
-    user.verificationCode = null // Doğrulama kodunu kaldır
 
     // Kullanıcıyı kaydet
     await user.save()
