@@ -16,8 +16,21 @@ const MatchSchema = new Schema(
       homeTeam: [
         {
           user: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+            user: {
+              type: Schema.Types.ObjectId,
+              ref: 'User',
+            },
+            shirtNumber: {
+              type: Schema.Types.Number,
+            },
+            mainPosition: {
+              type: Schema.Types.ObjectId,
+              ref: 'Position',
+            },
+            altPosition: {
+              type: Schema.Types.ObjectId,
+              ref: 'Position',
+            },
           },
           position: {
             type: Schema.Types.ObjectId,
@@ -32,8 +45,21 @@ const MatchSchema = new Schema(
       awayTeam: [
         {
           user: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+            user: {
+              type: Schema.Types.ObjectId,
+              ref: 'User',
+            },
+            shirtNumber: {
+              type: Schema.Types.Number,
+            },
+            mainPosition: {
+              type: Schema.Types.ObjectId,
+              ref: 'Position',
+            },
+            altPosition: {
+              type: Schema.Types.ObjectId,
+              ref: 'Position',
+            },
           },
           position: {
             type: Schema.Types.ObjectId,
