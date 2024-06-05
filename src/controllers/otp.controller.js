@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt')
 const Otp = require('../models/otp.model')
 const User = require('../models/user.model')
 const APIError = require('../utils/error.util')
+const Response = require('../utils/response.util')
 const { sendResetPasswordEmail } = require('../utils/email.util')
 
 const sendOtp = async (req, res) => {
@@ -20,7 +21,8 @@ const sendOtp = async (req, res) => {
     await Otp.create({ email, otp })
 
     console.log(`OTP for ${email}: ${otp}`)
-    // await sendResetPasswordEmail(email, otp)
+
+    await sendResetPasswordEmail(email, otp)
 
     return new Response({
       success: true,

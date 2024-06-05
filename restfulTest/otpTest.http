@@ -1,14 +1,22 @@
 @BASE_URL = http://localhost:3000/api
 
-###
-# Kullanıcıya OTP Kodu Gönder
+
+### Dummy Users
+# johndoe@example.com
+# janesmith@example.com
+# alicejohnson@example.com
+# davidbrown@example.com
+# emilywilson@example.com
+# michaeljohnson@example.com
+# sarahadams@example.com
+# christopherlee@example.com
 ###
 
 POST {{BASE_URL}}/otp/send-otp
 Content-Type: application/json
 
 {
-    "email": "johndoe@example.com"
+    "email": "eerenyavas@gmail.com"
 }
 ###
 POST {{BASE_URL}}/otp/verify-otp
