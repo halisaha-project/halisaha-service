@@ -65,6 +65,36 @@ const profile = async (req, res) => {
   return new Response(req.user).success(res)
 }
 
+const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body
+  const userId = req.user.id
+
+  try {
+    const user = await User.findById(userId)
+    if (!user) {
+      throw new APIError('User not found', 404)
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password)
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Incorrect current password' })
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10)
+    await user.save()
+
+    return new Response({ message: 'Password updated successfully' }).success(
+      res
+    )
+  } catch (error) {
+    return res
+      .status(error.statusCode || 500)
+      .json({ success: false, message: error.message })
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -72,4 +102,5 @@ module.exports = {
   updateUserById,
   deleteUser,
   profile,
+  changePassword,
 }
