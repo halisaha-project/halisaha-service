@@ -120,6 +120,9 @@ const createNewGroup = async (req, res) => {
   const { groupName, mainPosition, altPosition, shirtNumber } = req.body
   const createdBy = req.user.id
 
+  const mainPos = await Position.findOne({ abbreviation: mainPosition })
+  const altPos = await Position.findOne({ abbreviation: altPosition })
+
   try {
     const newGroup = new Group({
       groupName: groupName,
@@ -127,8 +130,8 @@ const createNewGroup = async (req, res) => {
       members: [
         {
           user: createdBy,
-          mainPosition: mainPosition,
-          altPosition: altPosition,
+          mainPosition: mainPos._id,
+          altPosition: altPos._id,
           shirtNumber: shirtNumber,
         },
       ],
