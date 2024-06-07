@@ -1,78 +1,58 @@
 const Match = require('../models/match.model')
 const Voting = require('../models/vote.model')
+const Group = require('../models/group.model')
 const Response = require('../utils/response.util')
+const APIError = require('../utils/error.util')
 
 const vote = async (req, res) => {
   try {
-    const { matchId, voterId, votedUserId, rating } = req.body
-
-    if (!matchId || !voterId || !votedUserId || !rating) {
-      return new Response(null, 400, 'Missing parameters').success(res)
-    }
-
-    const match = await Match.findById(matchId)
-    if (!match) {
-      return new Response(null, 404, 'Could not find the match').success(res)
-    }
-
-    if (voterId === votedUserId) {
-      return new Response(null, 400, 'You cannot vote for yourself').success(
-        res
-      )
-    }
-
-    let isVoterInLineup = false
-    let updatedLineup = []
+    const { matchId, voterId, votedUsers } = req.body
 
     if (
-      match.lineup.homeTeam.some((player) => player.user.toString() === voterId)
+      !matchId ||
+      !voterId ||
+      !votedUsers ||
+      !Array.isArray(votedUsers) ||
+      votedUsers.length === 0
     ) {
-      updatedLineup = match.lineup.homeTeam.map((player) => {
-        if (player.user.toString() === voterId) {
-          isVoterInLineup = true
-          return { ...player, hasVoted: true }
-        }
-        return player
-      })
-    } else if (
-      match.lineup.awayTeam.some((player) => player.user.toString() === voterId)
-    ) {
-      updatedLineup = match.lineup.awayTeam.map((player) => {
-        if (player.user.toString() === voterId) {
-          isVoterInLineup = true
-          return { ...player, hasVoted: true }
-        }
-        return player
-      })
+      throw new APIError('Missing parameters or invalid votedUsers format', 400)
     }
 
-    if (!isVoterInLineup) {
-      return new Response(
-        null,
-        403,
-        'You do not have permission for voting'
-      ).success(res)
+    const match = await Match.findById(matchId).populate('createdGroupId')
+    if (!match) {
+      throw new APIError('Could not find the match', 404)
+    }
+
+    if (votedUsers.some(({ votedUserId }) => voterId === votedUserId)) {
+      throw new APIError('You cannot vote for yourself', 400)
     }
 
     // Save the vote
-    const voting = new Voting({
-      matchId,
-      votes: [{ voterId, votedUserId, rating }],
-    })
-    await voting.save()
-
-    // Update the match lineup with the 'hasVoted' property updated
-    if (
-      match.lineup.homeTeam.some((player) => player.user.toString() === voterId)
-    ) {
-      match.lineup.homeTeam = updatedLineup
-    } else if (
-      match.lineup.awayTeam.some((player) => player.user.toString() === voterId)
-    ) {
-      match.lineup.awayTeam = updatedLineup
+    const existingVoting = await Voting.findOne({ matchId })
+    if (existingVoting) {
+      existingVoting.votes.push({ voterId, votedUsers })
+      await existingVoting.save()
+    } else {
+      const newVoting = new Voting({
+        matchId,
+        votes: [{ voterId, votedUsers }],
+      })
+      await newVoting.save()
     }
 
-    // Save the updated match
+    // Update the match lineup with the 'hasVoted' property updated
+    for (let team of ['homeTeam', 'awayTeam']) {
+      for (let player of match.lineup[team]) {
+        if (
+          votedUsers.some(
+            ({ votedUserId }) => player.user.user.toString() === votedUserId
+          )
+        ) {
+          player.hasVoted = true
+        }
+      }
+    }
+
     await match.save()
 
     return new Response(null, 200, 'Voting saved successfully').success(res)
@@ -80,10 +60,28 @@ const vote = async (req, res) => {
     console.error('An error occurred while trying to vote: ', error)
     return new Response(
       null,
-      500,
-      'An error occurred while trying to vote, try again later.'
+      error.statusCode || 500,
+      error.message ||
+        'An error occurred while trying to vote, try again later.'
     ).success(res)
   }
 }
 
-module.exports = vote
+const getVotesByMatchId = async (req, res) => {
+  const { id } = req.params
+  try {
+    const votes = await Voting.findOne({ matchId: id })
+    return new Response(votes, 200, 'Votes fetched successfully').success(res)
+  } catch (error) {
+    return new APIError(
+      null,
+      500,
+      'An error occurred while fetching voting'
+    ).success(res)
+  }
+}
+
+module.exports = {
+  vote,
+  getVotesByMatchId,
+}
