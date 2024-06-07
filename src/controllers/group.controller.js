@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const Group = require('../models/group.model')
 const GroupInvitation = require('../models/invitegroup.model')
 const Response = require('../utils/response.util')
+const Position = require('../models/position.model')
 
 const getAllGroups = async (req, res) => {
   const userId = req.user._id.toString()
@@ -160,10 +161,21 @@ const createGroupInvitationLink = async (req, res) => {
   const token = crypto.randomBytes(20).toString('hex')
 
   try {
+    // Check if there's an existing invitation link for the group
+    const existingInvitation = await GroupInvitation.findOne({ groupId })
+
+    if (existingInvitation) {
+      return res.status(200).json({
+        success: true,
+        data: existingInvitation,
+      })
+    }
+
     const isMember = await Group.findOne({
       _id: groupId,
       'members.user': userId,
     })
+
     if (!isMember) {
       return new Response(
         null,
@@ -176,6 +188,7 @@ const createGroupInvitationLink = async (req, res) => {
       groupId: groupId,
       token: token,
       expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      usesLeft: -1,
     })
 
     const savedInvitation = await newInvitation.save()
@@ -206,6 +219,14 @@ const joinGroup = async (req, res) => {
     return new Response(null, 400, 'Invitation link has expired').success(res)
   }
 
+  if (invitation.usesLeft === 0) {
+    return new Response(
+      null,
+      400,
+      'Invitation link has reached its usage limit'
+    ).success(res)
+  }
+
   const group = await Group.findById(invitation.groupId)
 
   if (!group) {
@@ -231,12 +252,19 @@ const joinGroup = async (req, res) => {
     return new Response(null, 400, 'Shirt number is already taken').success(res)
   }
 
+  const mainPos = await Position.findOne({ abbreviation: mainPosition })
+  const altPos = await Position.findOne({ abbreviation: altPosition })
+
   group.members.push({
     user: userId,
-    mainPosition: mainPosition,
-    altPosition: altPosition,
+    mainPosition: mainPos._id,
+    altPosition: altPos._id,
     shirtNumber: shirtNumber,
   })
+
+  invitation.usesLeft -= 1
+  await invitation.save()
+
   const savedGroup = await group.save()
 
   const populatedGroup = await Group.findById(savedGroup._id).populate({
