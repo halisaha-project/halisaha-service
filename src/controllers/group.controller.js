@@ -158,10 +158,15 @@ const createNewGroup = async (req, res) => {
 const createGroupInvitationLink = async (req, res) => {
   const groupId = req.body.groupId
   const userId = req.user.id
-  const token = crypto.randomBytes(20).toString('hex')
+  const generatedToken = () => {
+    return Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, '0')
+  }
+
+  const token = generatedToken()
 
   try {
-    // Check if there's an existing invitation link for the group
     const existingInvitation = await GroupInvitation.findOne({ groupId })
 
     if (existingInvitation) {
@@ -187,7 +192,7 @@ const createGroupInvitationLink = async (req, res) => {
     const newInvitation = new GroupInvitation({
       groupId: groupId,
       token: token,
-      expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expireAt: new Date(Date.now() + 60 * 60 * 1000),
       usesLeft: -1,
     })
 
