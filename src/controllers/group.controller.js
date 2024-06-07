@@ -124,6 +124,13 @@ const createNewGroup = async (req, res) => {
   const altPos = await Position.findOne({ abbreviation: altPosition })
 
   try {
+    const mainPos = await Position.findOne({
+      abbreviation: mainPosition,
+    })
+    const altPos = await Position.findOne({
+      abbreviation: altPosition,
+    })
+
     const newGroup = new Group({
       groupName: groupName,
       createdBy: createdBy,
@@ -161,17 +168,25 @@ const createNewGroup = async (req, res) => {
 const createGroupInvitationLink = async (req, res) => {
   const groupId = req.body.groupId
   const userId = req.user.id
-  const token = crypto.randomBytes(20).toString('hex')
+  const generatedToken = () => {
+    return Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, '0')
+  }
+
+  const token = generatedToken()
 
   try {
-    // Check if there's an existing invitation link for the group
-    const existingInvitation = await GroupInvitation.findOne({ groupId })
+    let existingInvitation = await GroupInvitation.findOne({ groupId })
 
-    if (existingInvitation) {
+    if (existingInvitation && existingInvitation.expireAt > Date.now()) {
       return res.status(200).json({
         success: true,
         data: existingInvitation,
       })
+    } else if (existingInvitation) {
+      // Süresi dolmuş davet bağlantısını sil
+      await GroupInvitation.findOneAndDelete({ groupId })
     }
 
     const isMember = await Group.findOne({
@@ -190,7 +205,7 @@ const createGroupInvitationLink = async (req, res) => {
     const newInvitation = new GroupInvitation({
       groupId: groupId,
       token: token,
-      expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expireAt: new Date(Date.now() + 60 * 60 * 1000),
       usesLeft: -1,
     })
 

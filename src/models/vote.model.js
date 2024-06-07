@@ -15,26 +15,31 @@ const VotingSchema = new Schema(
           ref: 'User',
           required: true,
         },
-        votedUserId: {
-          type: Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        rating: {
-          type: Number,
-          required: true,
-          min: 1,
-          max: 10,
-          validate: {
-            validator: function (value) {
-              return (
-                Number.isInteger(value) ||
-                (value % 1 === 0.5 && value >= 1 && value <= 10)
-              )
+        votedUsers: [
+          {
+            votedUserId: {
+              type: Schema.Types.ObjectId,
+              ref: 'User',
+              required: true,
             },
-            message: (props) => `${props.value} is not a valid rating value.`,
+            rating: {
+              type: Number,
+              required: true,
+              min: 1,
+              max: 10,
+              validate: {
+                validator: function (value) {
+                  return (
+                    Number.isInteger(value) ||
+                    (value % 1 === 0.5 && value >= 1 && value <= 10)
+                  )
+                },
+                message: (props) =>
+                  `${props.value} is not a valid rating value.`,
+              },
+            },
           },
-        },
+        ],
       },
     ],
   },
