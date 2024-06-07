@@ -174,13 +174,16 @@ const createGroupInvitationLink = async (req, res) => {
   const token = generatedToken()
 
   try {
-    const existingInvitation = await GroupInvitation.findOne({ groupId })
+    let existingInvitation = await GroupInvitation.findOne({ groupId })
 
-    if (existingInvitation) {
+    if (existingInvitation && existingInvitation.expireAt > Date.now()) {
       return res.status(200).json({
         success: true,
         data: existingInvitation,
       })
+    } else if (existingInvitation) {
+      // Süresi dolmuş davet bağlantısını sil
+      await GroupInvitation.findOneAndDelete({ groupId })
     }
 
     const isMember = await Group.findOne({
