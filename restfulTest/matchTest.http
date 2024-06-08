@@ -6,7 +6,7 @@ POST {{BASE_URL}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "eerenyavas@gmail.com",
+    "email": "muratkaradeniz800@gmail.com",
     "password": "12345678"
 }
 
@@ -24,17 +24,15 @@ Authorization: Bearer {{authToken}}
 {
     "groupId": "663e9a880e7f85f441b17fc1",
     "players": [
-        "663e94d90e7f85f441b17f80",
-        "663e94d90e7f85f441b17f81",
-        "663e94d90e7f85f441b17f82",
-        "663e94d90e7f85f441b17f83",
-        "663e94d90e7f85f441b17f84",
-        "663e94d90e7f85f441b17f85",
-        "663e94d90e7f85f441b17f86"
+        "6664170c931376a7166fff44",
+        "666418d67c3e86045de18931",
+        "6664194c7c3e86045de18958",
+        "6664193b7c3e86045de18952",
+        "6664190d7c3e86045de18946"
     ],
-    "formation": "3-3-1",
-    "matchDate": "2024-05-20T22:07:04.040+00:00",
-    "location": "Olimpik2"
+    "formation": "1-2-1",
+    "matchDate": "2024-06-14T21:00:00.040+00:00",
+    "location": "VOTING TEST MATCH"
 }
 
 ### GET MATCHES BY GROUP
