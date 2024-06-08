@@ -165,7 +165,9 @@ const getMatchesByGroupId = async (req, res) => {
 
   const matches = await Match.find({
     createdGroupId: groupId,
-  }).exec()
+  })
+    .sort({ matchDate: -1 })
+    .exec()
 
   return new Response(matches, 200).success(res)
 }
@@ -176,7 +178,9 @@ const getMatchesByUserId = async (req, res) => {
   try {
     const matches = await Match.find({
       'lineup.homeTeam.user.user': userId,
-    }).exec()
+    })
+      .sort({ matchDate: -1 })
+      .exec()
 
     return new Response(matches, 200).success(res)
   } catch (error) {
