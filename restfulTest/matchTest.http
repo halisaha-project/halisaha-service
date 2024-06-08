@@ -22,7 +22,7 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "groupId": "666419c4f2c8f16e76acb34a",
+"groupId": "666419c4f2c8f16e76acb34a",
     "players": [
         "6664170c931376a7166fff44",
         "666418d67c3e86045de18931",
@@ -33,6 +33,7 @@ Authorization: Bearer {{authToken}}
     "formation": "1-2-1",
     "matchDate": "2024-06-14T21:00:00.040+00:00",
     "location": "VOTING TEST MATCH"
+
 }
 
 ### GET MATCHES BY GROUP
