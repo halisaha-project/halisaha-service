@@ -1,7 +1,14 @@
 @BASE_URL = http://localhost:3000/api
 
 
-
+# johndoe@example.com
+# janesmith@example.com
+# alicejohnson@example.com
+# davidbrown@example.com
+# emilywilson@example.com
+# michaeljohnson@example.com
+# sarahadams@example.com
+# christopherlee@example.com
 
 ### LOGIN
 # @name login
@@ -9,10 +16,22 @@ POST {{BASE_URL}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "michaeljohnson@example.com",
+    "email": "milywilson@example.com",
     "password": "12345678"
 }
 
+### JOIN GROUP
+@authToken = {{login.response.body.data}}
+POST {{BASE_URL}}/groups/join
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "invitationToken": "292706",
+    "mainPosition": "GK",
+    "altPosition": "DEF",
+    "shirtNumber": 11
+}
 ### GET ALL GROUPS BY USER
 GET {{BASE_URL}}/groups
 Content-Type: application/json
@@ -30,10 +49,10 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "groupName": "Avcılar IUC Halısaha",
-    "mainPosition": "663e94ae3f58cf748889aaed",
-    "altPosition": "663e94ae3f58cf748889aaca",
-    "shirtNumber": 8
+    "groupName": "VOTING TEST GROUP",
+    "mainPosition": "FWD",
+    "altPosition": "DEF",
+    "shirtNumber":1
 }
 
 ### INVATE GROUP
@@ -43,21 +62,11 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "groupId": "663e9a880e7f85f441b17fc1"
+    "groupId": "666345220b51a4b41d9218e7"
 }
 
-### JOIN GROUP
-@authToken = {{login.response.body.data}}
-POST {{BASE_URL}}/groups/join
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
-{
-    "invitationToken": "3a3d457daedeb766b28811438ab47692476f23f3",
-    "mainPosition": "663e94ae3f58cf748889ab10",
-    "altPosition": "663e94ae3f58cf748889aaca",
-    "shirtNumber": 1
-}
+
 
 ### LEAVE GROUP
 @authToken = {{login.response.body.data}}
@@ -66,7 +75,7 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "userId": "6637ee27b3c1eb3c06cd111d",
-    "groupId": "6637f6fdbd2b0d157a8c5328"
+    "userId": "6661bb6e54312e13c9b1005d",
+    "groupId": "663e9a880e7f85f441b17fc1"
 }
 
