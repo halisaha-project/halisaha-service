@@ -6,11 +6,19 @@ POST {{BASE_URL}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "michaeljohnson@example.com",
+    "email": "muratkaradeniz800@gmail.com",
     "password": "12345678"
 }
 
+### GET VOTES
+@authToken = {{login.response.body.data}}
+GET {{BASE_URL}}/voting/66641d79f2c8f16e76acb3ab
+Authorization: Bearer {{authToken}}
 ###
+
+
+
+
 
 ### GET GROUPS
 @authToken = {{login.response.body.data}}
@@ -18,24 +26,37 @@ GET {{BASE_URL}}/matches/byGroup/663e9a880e7f85f441b17fc1
 Authorization: Bearer {{authToken}}
 ###
 
-@authToken = {{login.response.body.data}}
 POST {{BASE_URL}}/voting/vote
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.data}}
 
 {
-  "matchId": "663ecd58583570b329783540",
-  "voterId": "663e94d90e7f85f441b17f79",
-  "votedUserId": "663e94d90e7f85f441b17f88",
-  "rating": 7.5
+  "matchId": "66641d79f2c8f16e76acb3ab",
+  "votes": [
+    {
+      "voterId": "6664170c931376a7166fff44",
+      "votedUsers": [
+        {
+          "votedUserId": "666418d67c3e86045de18931",
+          "rating": 6
+        },
+        {
+          "votedUserId": "6664194c7c3e86045de18958",
+          "rating": 8
+        },
+        {
+          "votedUserId": "6664193b7c3e86045de18952",
+          "rating": 9
+        },
+        {
+          "votedUserId": "6664190d7c3e86045de18946",
+          "rating": 7.5
+        }
+      ]
+    }
+  ]
 }
 
-###663e94d90e7f85f441b17f80
-###663e94d90e7f85f441b17f81
-###663e94d90e7f85f441b17f82
-###663e94d90e7f85f441b17f83
-###663e94d90e7f85f441b17f84
-###663e94d90e7f85f441b17f85
-###663e94d90e7f85f441b17f86
+###
 
 

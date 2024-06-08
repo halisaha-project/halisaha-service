@@ -1,15 +1,19 @@
 const Match = require('../models/match.model')
 const Voting = require('../models/vote.model')
-const Group = require('../models/group.model')
 const Response = require('../utils/response.util')
 const APIError = require('../utils/error.util')
 
 const vote = async (req, res) => {
   try {
-    const { matchId, voterId, votedUsers } = req.body
+    const { matchId, votes } = req.body
+    if (!matchId || !votes || !Array.isArray(votes) || votes.length === 0) {
+      throw new APIError('Missing parameters or invalid votes format', 400)
+    }
+
+    const voteDetails = votes[0]
+    const { voterId, votedUsers } = voteDetails
 
     if (
-      !matchId ||
       !voterId ||
       !votedUsers ||
       !Array.isArray(votedUsers) ||
@@ -30,12 +34,12 @@ const vote = async (req, res) => {
     // Save the vote
     const existingVoting = await Voting.findOne({ matchId })
     if (existingVoting) {
-      existingVoting.votes.push({ voterId, votedUsers })
+      existingVoting.votes.push(voteDetails)
       await existingVoting.save()
     } else {
       const newVoting = new Voting({
         matchId,
-        votes: [{ voterId, votedUsers }],
+        votes: [voteDetails],
       })
       await newVoting.save()
     }
