@@ -18,7 +18,7 @@ const createMatch = async (req, res) => {
     ])
     .select('members -_id')
 
-  if (membersDetails.length === 0) throw new APIError('Unauthorized.', 401)
+  if (!membersDetails) throw new APIError('Group does not exist.', 401)
 
   const playersDetails = membersDetails.members.filter((member) => {
     return players.includes(member.user.toString())
@@ -117,16 +117,22 @@ const createLineup = (players, formation) => {
 
   // Kalan oyuncuları alternatif pozisyonlarına göre oyuncuları yerleştir.
   const remainingPlayersAlternate = players.filter((player) => {
-    return !inTeam.includes(player)
+    return !inTeam.some((teamMember) =>
+      teamMember.player.user.equals(player.user)
+    )
   })
+
   remainingPlayersAlternate.forEach((player) => {
     assignPosition(player, player.mainPosition.abbreviation)
   })
 
   // Yerleşemeyen oyuncuları kalan boşluklara yerleştir.
   const remainingPlayersLast = players.filter((player) => {
-    return !inTeam.includes(player)
+    return !inTeam.some((teamMember) =>
+      teamMember.player.user.equals(player.user)
+    )
   })
+
   remainingPlayersLast.forEach((player) => {
     if (goalkeeperNeeded && lineup.goalkeeper === null) {
       lineup.goalkeeper = player
