@@ -22,19 +22,17 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-    "groupId": "663e9a880e7f85f441b17fc1",
+    "groupId": "6663775e75f79ce379ea885a",
     "players": [
-        "663e94d90e7f85f441b17f80",
-        "663e94d90e7f85f441b17f81",
-        "663e94d90e7f85f441b17f82",
-        "663e94d90e7f85f441b17f83",
-        "663e94d90e7f85f441b17f84",
-        "663e94d90e7f85f441b17f85",
-        "663e94d90e7f85f441b17f86"
+        "6663773575f79ce379ea884d",
+        "6664170c931376a7166fff44",
+        "666418d67c3e86045de18931",
+        "6664194c7c3e86045de18958",
+        "6664193b7c3e86045de18952"
     ],
-    "formation": "3-3-1",
+    "formation": "2-2-1",
     "matchDate": "2024-05-20T22:07:04.040+00:00",
-    "location": "Olimpik2"
+    "location": "Olimpik"
 }
 
 ### GET MATCHES BY GROUP
