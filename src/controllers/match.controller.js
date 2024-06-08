@@ -3,6 +3,9 @@ const Group = require('../models/group.model')
 const Position = require('../models/position.model')
 const Response = require('../utils/response.util')
 const APIError = require('../utils/error.util')
+const {
+  calculateAverageRatingsByMatchId,
+} = require('../controllers/voting.controller')
 
 const createMatch = async (req, res) => {
   const { groupId, players, formation, matchDate, location } = req.body
@@ -192,39 +195,72 @@ const getMatchDetails = async (req, res) => {
   const matchId = req.params.matchId
   const userId = req.user._id
 
-  const matchDetails = await Match.findOne({ _id: matchId })
-    .populate({
-      path: 'createdGroupId',
-      select: 'groupName ',
-    })
-    .populate({
-      path: 'lineup.homeTeam.user.user',
-      select: 'nameSurname username',
-    })
-    .populate({
-      path: 'lineup.awayTeam.user.user',
-      select: 'nameSurname username',
-    })
-    .populate({
-      path: 'lineup.homeTeam.position',
-      select: 'name abbreviation',
-    })
-    .populate({
-      path: 'lineup.awayTeam.position',
-      select: 'name abbreviation',
-    })
-    .exec()
+  try {
+    // Maç detaylarını al
+    const matchDetails = await Match.findOne({ _id: matchId })
+      .populate({
+        path: 'createdGroupId',
+        select: 'groupName ',
+      })
+      .populate({
+        path: 'lineup.homeTeam.user.user',
+        select: 'nameSurname username',
+      })
+      .populate({
+        path: 'lineup.awayTeam.user.user',
+        select: 'nameSurname username',
+      })
+      .populate({
+        path: 'lineup.homeTeam.position',
+        select: 'name abbreviation',
+      })
+      .populate({
+        path: 'lineup.awayTeam.position',
+        select: 'name abbreviation',
+      })
+      .exec()
 
-  const groupId = matchDetails.createdGroupId
+    const groupId = matchDetails.createdGroupId
 
-  const isMember = await Group.find({
-    _id: groupId,
-    members: { $elemMatch: { user: userId } },
-  }).exec()
+    // Kullanıcının gruba üye olup olmadığını kontrol et
+    const isMember = await Group.find({
+      _id: groupId,
+      members: { $elemMatch: { user: userId } },
+    }).exec()
 
-  if (isMember.length === 0) throw new APIError('Unauthorized.', 401)
+    if (isMember.length === 0) throw new APIError('Unauthorized.', 401)
 
-  return new Response(matchDetails, 200).success(res)
+    // Kullanıcıların ortalama puanlarını al
+    const averageRatings = await calculateAverageRatingsByMatchId(matchId)
+
+    // Kullanıcı puanlarını ilgili dizilere ekle
+    const addUserRatings = (team) => {
+      return team.map((player) => {
+        const userId = player.user.user._id.toString()
+        const rating = averageRatings[userId] || null
+        return {
+          ...player.toObject(),
+          rating,
+        }
+      })
+    }
+
+    // Maç detaylarını güncelle
+    const updatedHomeTeam = addUserRatings(matchDetails.lineup.homeTeam)
+    const updatedAwayTeam = addUserRatings(matchDetails.lineup.awayTeam)
+
+    const matchDetailsWithRatings = {
+      ...matchDetails.toObject(),
+      lineup: {
+        homeTeam: updatedHomeTeam,
+        awayTeam: updatedAwayTeam,
+      },
+    }
+
+    return new Response(matchDetailsWithRatings, 200).success(res)
+  } catch (error) {
+    return new Response(error.message, error.status || 500).error(res)
+  }
 }
 
 module.exports = {

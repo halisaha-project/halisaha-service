@@ -48,9 +48,7 @@ const vote = async (req, res) => {
     for (let team of ['homeTeam', 'awayTeam']) {
       for (let player of match.lineup[team]) {
         if (
-          votedUsers.some(
-            ({ votedUserId }) => player.user.user.toString() === votedUserId
-          )
+          voterId.some(({ voterId }) => player.user.user.toString() === voterId)
         ) {
           player.hasVoted = true
         }
@@ -85,7 +83,54 @@ const getVotesByMatchId = async (req, res) => {
   }
 }
 
+const getVotesByMatchIdInternal = async (matchId) => {
+  try {
+    const votes = await Voting.findOne({ matchId })
+    return votes
+  } catch (error) {
+    throw new Error('An error occurred while fetching voting')
+  }
+}
+
+const calculateAverageRatingsByMatchId = async (matchId) => {
+  try {
+    const allVotes = await getVotesByMatchIdInternal(matchId)
+
+    if (!allVotes || !allVotes.votes) {
+      throw new Error('No votes found for the given match')
+    }
+
+    // Tüm kullanıcıların ortalama puanlarını tutacak nesne
+    const userAverageRatings = {}
+
+    // Tüm oyları gezip kullanıcı puanlarını hesapla
+    allVotes.votes.forEach((vote) => {
+      vote.votedUsers.forEach((votedUser) => {
+        const userId = votedUser.votedUserId.toString()
+        if (!userAverageRatings[userId]) {
+          userAverageRatings[userId] = { totalRating: 0, voteCount: 0 }
+        }
+        userAverageRatings[userId].totalRating += votedUser.rating
+        userAverageRatings[userId].voteCount += 1
+      })
+    })
+
+    // Kullanıcıların ortalama puanlarını hesapla
+    Object.keys(userAverageRatings).forEach((userId) => {
+      const userStats = userAverageRatings[userId]
+      userAverageRatings[userId] = (
+        userStats.totalRating / userStats.voteCount
+      ).toFixed(1)
+    })
+
+    return userAverageRatings
+  } catch (error) {
+    throw new Error('An error occurred while calculating average ratings')
+  }
+}
+
 module.exports = {
   vote,
   getVotesByMatchId,
+  calculateAverageRatingsByMatchId,
 }
