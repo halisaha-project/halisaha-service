@@ -57,7 +57,6 @@ const vote = async (req, res) => {
 
     return new Response(null, 200, 'Voting saved successfully').success(res)
   } catch (error) {
-    console.error('An error occurred while trying to vote: ', error)
     return new Response(
       null,
       error.statusCode || 500,
@@ -95,7 +94,7 @@ const calculateAverageRatingsByMatchId = async (matchId) => {
     const allVotes = await getVotesByMatchIdInternal(matchId)
 
     if (!allVotes || !allVotes.votes) {
-      throw new Error('No votes found for the given match')
+      return {}
     }
 
     const userAverageRatings = {}
