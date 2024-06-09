@@ -47,9 +47,7 @@ const vote = async (req, res) => {
     // Update the match lineup with the 'hasVoted' property updated
     for (let team of ['homeTeam', 'awayTeam']) {
       for (let player of match.lineup[team]) {
-        if (
-          voterId.some(({ voterId }) => player.user.user.toString() === voterId)
-        ) {
+        if (player.user.user.toString() === voterId) {
           player.hasVoted = true
         }
       }
@@ -100,10 +98,8 @@ const calculateAverageRatingsByMatchId = async (matchId) => {
       throw new Error('No votes found for the given match')
     }
 
-    // Tüm kullanıcıların ortalama puanlarını tutacak nesne
     const userAverageRatings = {}
 
-    // Tüm oyları gezip kullanıcı puanlarını hesapla
     allVotes.votes.forEach((vote) => {
       vote.votedUsers.forEach((votedUser) => {
         const userId = votedUser.votedUserId.toString()
@@ -115,14 +111,12 @@ const calculateAverageRatingsByMatchId = async (matchId) => {
       })
     })
 
-    // Kullanıcıların ortalama puanlarını hesapla
     Object.keys(userAverageRatings).forEach((userId) => {
       const userStats = userAverageRatings[userId]
       userAverageRatings[userId] = (
         userStats.totalRating / userStats.voteCount
       ).toFixed(1)
     })
-
     return userAverageRatings
   } catch (error) {
     throw new Error('An error occurred while calculating average ratings')
