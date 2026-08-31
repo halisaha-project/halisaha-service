@@ -11,4 +11,9 @@ export class MailService {
     void message;
     return Promise.resolve();
   }
+
+  sendGroupInvitation(...message: [string, string]): Promise<void> {
+    void message;
+    return Promise.resolve();
+  }
 }
