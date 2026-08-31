@@ -1,17 +1,29 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { getConnectionToken } from '@nestjs/mongoose';
+import { Module } from '@nestjs/common';
+import { HealthController } from '../src/modules/health/health.controller';
 import { configureApplication } from '../src/bootstrap';
+import { ConnectionStates } from 'mongoose';
 
 describe('Health endpoint (e2e)', () => {
   let app: INestApplication;
 
+  @Module({
+    controllers: [HealthController],
+    providers: [
+      {
+        provide: getConnectionToken(),
+        useValue: { readyState: ConnectionStates.connected },
+      },
+    ],
+  })
+  class TestHealthModule {}
+
   beforeAll(async () => {
-    process.env.DB_URL = 'mongodb://localhost:27017/halisaha-test';
-    process.env.JWT_SECRET = 'test-only-secret';
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [TestHealthModule],
     }).compile();
     app = moduleRef.createNestApplication();
     configureApplication(app);
@@ -28,5 +40,5 @@ describe('Health endpoint (e2e)', () => {
     request(app.getHttpServer())
       .get('/api/v1/health')
       .expect(200)
-      .expect({ status: 'ok' }));
+      .expect({ status: 'ok', database: 'up' }));
 });
