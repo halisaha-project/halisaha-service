@@ -18,6 +18,50 @@ export class MatchesService {
     @InjectModel(Match.name) private readonly model: Model<Match>,
     private readonly groups: GroupsService,
   ) {}
+
+  async findRequiredForVoting(
+    groupId: string,
+    matchId: string,
+    userId: string,
+  ): Promise<Match> {
+    await this.groups.assertMember(groupId, userId);
+    const match = await this.model.findOne({ _id: matchId, groupId }).exec();
+    if (!match)
+      throw new ApplicationException(
+        404,
+        ErrorCode.MATCH_NOT_FOUND,
+        'Match not found',
+      );
+    return match;
+  }
+  async updateStatus(
+    groupId: string,
+    matchId: string,
+    status: string,
+    userId: string,
+  ) {
+    await this.groups.assertOwner(groupId, userId);
+    if (status !== MatchStatus.COMPLETED)
+      throw new ApplicationException(
+        400,
+        ErrorCode.INVALID_MATCH_STATE,
+        'Invalid match state',
+      );
+    const match = await this.model
+      .findOneAndUpdate(
+        { _id: matchId, groupId, status: MatchStatus.READY },
+        { status },
+        { new: true },
+      )
+      .exec();
+    if (!match)
+      throw new ApplicationException(
+        400,
+        ErrorCode.INVALID_MATCH_STATE,
+        'Invalid match state',
+      );
+    return this.safe(match);
+  }
   async create(groupId: string, dto: CreateMatchDto, userId: string) {
     await this.groups.assertOwner(groupId, userId);
     return this.safe(

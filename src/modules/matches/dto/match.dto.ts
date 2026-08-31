@@ -33,6 +33,10 @@ export class ParticipantsDto {
   @IsMongoId({ each: true })
   participantUserIds!: string[];
 }
+export class MatchStatusDto {
+  @ApiProperty({ example: 'completed' })
+  status!: string;
+}
 export class MatchResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() groupId!: string;

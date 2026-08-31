@@ -19,6 +19,7 @@ import {
   CreateMatchDto,
   ParticipantsDto,
   UpdateMatchDto,
+  MatchStatusDto,
 } from './dto/match.dto';
 import { MatchesService } from './matches.service';
 @ApiTags('matches')
@@ -27,6 +28,14 @@ import { MatchesService } from './matches.service';
 @Controller({ path: 'groups/:groupId/matches', version: '1' })
 export class MatchesController {
   constructor(private readonly service: MatchesService) {}
+  @Patch(':matchId/status') @UsePipes(MongoIdPipe) updateStatus(
+    @Param('groupId') g: string,
+    @Param('matchId') m: string,
+    @Body() d: MatchStatusDto,
+    @CurrentUser() u: AuthenticatedUser,
+  ) {
+    return this.service.updateStatus(g, m, d.status, u.userId);
+  }
   @Post() @UsePipes(MongoIdPipe) create(
     @Param('groupId') g: string,
     @Body() d: CreateMatchDto,

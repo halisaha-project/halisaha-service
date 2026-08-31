@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { MatchesModule } from './modules/matches/matches.module';
+import { VotingModule } from './modules/voting/voting.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MatchesModule } from './modules/matches/matches.module';
     AuthModule,
     GroupsModule,
     MatchesModule,
+    VotingModule,
   ],
 })
 export class AppModule {}
