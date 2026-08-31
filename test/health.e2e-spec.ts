@@ -1,11 +1,8 @@
-import {
-  INestApplication,
-  ValidationPipe,
-  VersioningType,
-} from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import request = require('supertest');
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { configureApplication } from '../src/bootstrap';
 
 describe('Health endpoint (e2e)', () => {
   let app: INestApplication;
@@ -17,15 +14,7 @@ describe('Health endpoint (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    configureApplication(app);
     await app.init();
   });
 

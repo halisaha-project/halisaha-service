@@ -1,7 +1,6 @@
 export interface EnvironmentVariables {
   NODE_ENV?: string;
   PORT?: string;
-  MONGODB_URI?: string;
 }
 
 export function validateEnvironment(
@@ -14,13 +13,12 @@ export function validateEnvironment(
     throw new Error(`Invalid NODE_ENV: ${nodeEnv}`);
   }
 
-  if (Number.isNaN(port) || port <= 0) {
-    throw new Error('PORT must be a valid positive number');
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('PORT must be an integer between 1 and 65535');
   }
 
   return {
     NODE_ENV: nodeEnv,
     PORT: String(port),
-    MONGODB_URI: config.MONGODB_URI ? String(config.MONGODB_URI) : undefined,
   };
 }
