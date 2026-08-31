@@ -96,6 +96,22 @@ export class UsersService {
     return user;
   }
 
+  async updatePasswordHash(
+    id: string,
+    passwordHash: string,
+  ): Promise<UserDocument> {
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { passwordHash }, { new: true })
+      .exec();
+    if (!user)
+      throw new ApplicationException(
+        404,
+        ErrorCode.USER_NOT_FOUND,
+        'User not found',
+      );
+    return user;
+  }
+
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
   }

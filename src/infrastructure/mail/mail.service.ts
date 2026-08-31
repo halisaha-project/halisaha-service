@@ -6,4 +6,9 @@ export class MailService {
     void message;
     return Promise.resolve();
   }
+
+  sendPasswordReset(...message: [string, string]): Promise<void> {
+    void message;
+    return Promise.resolve();
+  }
 }

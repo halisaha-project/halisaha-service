@@ -8,6 +8,8 @@ import { EmailVerificationDto } from './dto/email-verification.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
+import { PasswordResetCompleteDto } from './dto/password-reset-complete.dto';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -48,6 +50,27 @@ export class AuthController {
   })
   async logout(@Body() dto: RefreshTokenDto): Promise<void> {
     await this.authService.logout(dto);
+  }
+
+  @Post('password-reset/request')
+  @ApiOperation({ summary: 'Request a password reset' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Reset request accepted' })
+  requestPasswordReset(
+    @Body() dto: PasswordResetRequestDto,
+  ): Promise<{ accepted: true }> {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post('password-reset/complete')
+  @ApiOperation({ summary: 'Complete a password reset' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password reset completed',
+  })
+  completePasswordReset(
+    @Body() dto: PasswordResetCompleteDto,
+  ): Promise<{ reset: true }> {
+    return this.authService.completePasswordReset(dto);
   }
 
   @Post('email-verification/verify')

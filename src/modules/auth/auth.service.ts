@@ -24,6 +24,9 @@ import { EmailVerificationDto } from './dto/email-verification.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { EmailVerification } from './schemas/email-verification.schema';
 import { MailService } from '../../infrastructure/mail/mail.service';
+import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
+import { PasswordResetCompleteDto } from './dto/password-reset-complete.dto';
+import { PasswordReset } from './schemas/password-reset.schema';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +39,8 @@ export class AuthService {
     @InjectModel(EmailVerification.name)
     private readonly verificationModel?: Model<EmailVerification>,
     private readonly mailService?: MailService,
+    @InjectModel(PasswordReset.name)
+    private readonly passwordResetModel?: Model<PasswordReset>,
   ) {}
 
   async register(dto: RegisterDto): Promise<UserResponseDto> {
@@ -127,6 +132,59 @@ export class AuthService {
         this.configService.getOrThrow<string>('jwtAccessExpiresIn'),
       ),
     };
+  }
+
+  async requestPasswordReset(
+    dto: PasswordResetRequestDto,
+  ): Promise<{ accepted: true }> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (user) {
+      await this.passwordResetModel!.updateMany(
+        { userId: user._id, consumedAt: null },
+        { $set: { consumedAt: new Date() } },
+      ).exec();
+      const token =
+        randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', '');
+      await this.passwordResetModel!.create({
+        userId: user._id,
+        tokenHash: this.hash(token),
+        expiresAt: new Date(Date.now() + 3600000),
+        consumedAt: null,
+      });
+      await this.mailService?.sendPasswordReset(user.email, token);
+    }
+    return { accepted: true };
+  }
+
+  async completePasswordReset(
+    dto: PasswordResetCompleteDto,
+  ): Promise<{ reset: true }> {
+    const now = new Date();
+    const record = await this.passwordResetModel!.findOneAndUpdate(
+      {
+        tokenHash: this.hash(dto.token),
+        consumedAt: null,
+        expiresAt: { $gt: now },
+      },
+      { $set: { consumedAt: now } },
+      { new: true },
+    ).exec();
+    if (!record)
+      throw new ApplicationException(
+        400,
+        ErrorCode.INVALID_PASSWORD_RESET_TOKEN,
+        'Invalid password reset token',
+      );
+    const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    await this.usersService.updatePasswordHash(
+      String(record.userId),
+      passwordHash,
+    );
+    await this.sessionModel!.updateMany(
+      { userId: record.userId, revokedAt: null },
+      { $set: { revokedAt: now } },
+    ).exec();
+    return { reset: true };
   }
 
   async refresh(dto: RefreshTokenDto): Promise<TokenResponseDto> {
