@@ -2,6 +2,8 @@ export interface EnvironmentVariables {
   NODE_ENV?: string;
   PORT?: string;
   MONGODB_URI?: string;
+  JWT_ACCESS_SECRET?: string;
+  JWT_ACCESS_EXPIRES_IN?: string;
 }
 
 export function validateEnvironment(
@@ -23,6 +25,19 @@ export function validateEnvironment(
     throw new Error('MONGODB_URI is required');
   }
 
+  const jwtAccessSecret = config.JWT_ACCESS_SECRET;
+  if (typeof jwtAccessSecret !== 'string' || jwtAccessSecret.trim() === '') {
+    throw new Error('JWT_ACCESS_SECRET is required');
+  }
+
+  const jwtAccessExpiresIn = config.JWT_ACCESS_EXPIRES_IN ?? '15m';
+  if (
+    typeof jwtAccessExpiresIn !== 'string' ||
+    jwtAccessExpiresIn.trim() === ''
+  ) {
+    throw new Error('JWT_ACCESS_EXPIRES_IN must be a non-empty string');
+  }
+
   try {
     const parsedUri = new URL(mongodbUri);
     if (!['mongodb:', 'mongodb+srv:'].includes(parsedUri.protocol)) {
@@ -36,5 +51,7 @@ export function validateEnvironment(
     NODE_ENV: nodeEnv,
     PORT: String(port),
     MONGODB_URI: mongodbUri,
+    JWT_ACCESS_SECRET: jwtAccessSecret,
+    JWT_ACCESS_EXPIRES_IN: jwtAccessExpiresIn,
   };
 }

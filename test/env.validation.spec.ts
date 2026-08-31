@@ -9,11 +9,14 @@ describe('environment validation', () => {
     expect(
       validateEnvironment({
         MONGODB_URI: 'mongodb://localhost:27017/halisaha',
+        JWT_ACCESS_SECRET: 'test-secret',
       }),
     ).toEqual({
       NODE_ENV: 'development',
       PORT: '3000',
       MONGODB_URI: 'mongodb://localhost:27017/halisaha',
+      JWT_ACCESS_SECRET: 'test-secret',
+      JWT_ACCESS_EXPIRES_IN: '15m',
     });
   });
 
@@ -23,17 +26,21 @@ describe('environment validation', () => {
         NODE_ENV: 'test',
         PORT: '8080',
         MONGODB_URI: 'mongodb://localhost:27017/test',
+        JWT_ACCESS_SECRET: 'test-secret',
       }),
     ).toEqual({
       NODE_ENV: 'test',
       PORT: '8080',
       MONGODB_URI: 'mongodb://localhost:27017/test',
+      JWT_ACCESS_SECRET: 'test-secret',
+      JWT_ACCESS_EXPIRES_IN: '15m',
     });
     expect(
       validateEnvironment({
         NODE_ENV: 'production',
         PORT: '65535',
         MONGODB_URI: 'mongodb+srv://cluster.example/test',
+        JWT_ACCESS_SECRET: 'test-secret',
       }).PORT,
     ).toBe('65535');
   });
@@ -45,6 +52,7 @@ describe('environment validation', () => {
         validateEnvironment({
           NODE_ENV: nodeEnv,
           MONGODB_URI: 'mongodb://localhost:27017/test',
+          JWT_ACCESS_SECRET: 'test-secret',
         }),
       ).toThrow('Invalid NODE_ENV');
     },
@@ -57,6 +65,7 @@ describe('environment validation', () => {
         validateEnvironment({
           PORT: port,
           MONGODB_URI: 'mongodb://localhost:27017/test',
+          JWT_ACCESS_SECRET: 'test-secret',
         }),
       ).toThrow('PORT must be an integer');
     },
