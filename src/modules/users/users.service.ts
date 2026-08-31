@@ -45,6 +45,13 @@ export class UsersService {
       .exec();
   }
 
+  findCredentialsByUsername(username: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findOne({ username: this.normalizeUsername(username) })
+      .select('+passwordHash')
+      .exec();
+  }
+
   async create(data: CreateUserData): Promise<UserDocument> {
     const user = new this.userModel({
       ...data,

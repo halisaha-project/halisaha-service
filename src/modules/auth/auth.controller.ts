@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserResponseDto } from '../users/dto/user-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { TokenResponseDto } from './dto/token-response.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
@@ -17,5 +19,14 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email or username already exists' })
   register(@Body() dto: RegisterDto): Promise<UserResponseDto> {
     return this.authService.register(dto);
+  }
+
+  @Post('login')
+  @ApiOperation({ summary: 'Log in with an email or username' })
+  @ApiResponse({ status: HttpStatus.OK, type: TokenResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid login data' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  login(@Body() dto: LoginDto): Promise<TokenResponseDto> {
+    return this.authService.login(dto);
   }
 }
