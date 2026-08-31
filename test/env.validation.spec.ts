@@ -10,6 +10,7 @@ describe('environment validation', () => {
       validateEnvironment({
         MONGODB_URI: 'mongodb://localhost:27017/halisaha',
         JWT_ACCESS_SECRET: 'test-secret',
+        JWT_REFRESH_SECRET: 'refresh-test-secret',
       }),
     ).toEqual({
       NODE_ENV: 'development',
@@ -17,6 +18,8 @@ describe('environment validation', () => {
       MONGODB_URI: 'mongodb://localhost:27017/halisaha',
       JWT_ACCESS_SECRET: 'test-secret',
       JWT_ACCESS_EXPIRES_IN: '15m',
+      JWT_REFRESH_SECRET: 'refresh-test-secret',
+      JWT_REFRESH_EXPIRES_IN: '30d',
     });
   });
 
@@ -27,6 +30,7 @@ describe('environment validation', () => {
         PORT: '8080',
         MONGODB_URI: 'mongodb://localhost:27017/test',
         JWT_ACCESS_SECRET: 'test-secret',
+        JWT_REFRESH_SECRET: 'refresh-test-secret',
       }),
     ).toEqual({
       NODE_ENV: 'test',
@@ -34,6 +38,8 @@ describe('environment validation', () => {
       MONGODB_URI: 'mongodb://localhost:27017/test',
       JWT_ACCESS_SECRET: 'test-secret',
       JWT_ACCESS_EXPIRES_IN: '15m',
+      JWT_REFRESH_SECRET: 'refresh-test-secret',
+      JWT_REFRESH_EXPIRES_IN: '30d',
     });
     expect(
       validateEnvironment({
@@ -41,6 +47,7 @@ describe('environment validation', () => {
         PORT: '65535',
         MONGODB_URI: 'mongodb+srv://cluster.example/test',
         JWT_ACCESS_SECRET: 'test-secret',
+        JWT_REFRESH_SECRET: 'refresh-test-secret',
       }).PORT,
     ).toBe('65535');
   });
@@ -53,6 +60,7 @@ describe('environment validation', () => {
           NODE_ENV: nodeEnv,
           MONGODB_URI: 'mongodb://localhost:27017/test',
           JWT_ACCESS_SECRET: 'test-secret',
+          JWT_REFRESH_SECRET: 'refresh-test-secret',
         }),
       ).toThrow('Invalid NODE_ENV');
     },
@@ -66,6 +74,7 @@ describe('environment validation', () => {
           PORT: port,
           MONGODB_URI: 'mongodb://localhost:27017/test',
           JWT_ACCESS_SECRET: 'test-secret',
+          JWT_REFRESH_SECRET: 'refresh-test-secret',
         }),
       ).toThrow('PORT must be an integer');
     },

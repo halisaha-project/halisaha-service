@@ -1,5 +1,6 @@
 export const ACCESS_TOKEN_TYPE = 'access';
 export const BCRYPT_ROUNDS = 12;
+export const REFRESH_TOKEN_TYPE = 'refresh';
 
 export function expiresInSeconds(expiresIn: string): number {
   const match = /^(\d+)\s*(s|m|h|d)?$/i.exec(expiresIn.trim());

@@ -4,6 +4,9 @@ export class TokenResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken!: string;
 
+  @ApiProperty({ example: 'refresh-token' })
+  refreshToken?: string;
+
   @ApiProperty({ example: 900 })
   expiresIn!: number;
 }

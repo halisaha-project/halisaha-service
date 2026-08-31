@@ -1,19 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomUUID } from 'node:crypto';
+import { Model } from 'mongoose';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { UsersService } from '../users/users.service';
 import {
   ACCESS_TOKEN_TYPE,
   BCRYPT_ROUNDS,
+  REFRESH_TOKEN_TYPE,
   expiresInSeconds,
 } from './auth.constants';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
-import { JwtService } from '@nestjs/jwt';
 import { ApplicationException } from '../../common/errors/application.exception';
 import { ErrorCode } from '../../common/errors/error-code';
+import { AuthSession } from './schemas/auth-session.schema';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +27,8 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectModel(AuthSession.name)
+    private readonly sessionModel?: Model<AuthSession>,
   ) {}
 
   async register(dto: RegisterDto): Promise<UserResponseDto> {
@@ -52,11 +60,104 @@ export class AuthService {
       sub: String(user._id),
       type: ACCESS_TOKEN_TYPE,
     });
+    const refreshToken = await this.createRefreshToken(String(user._id));
     return {
       accessToken,
+      refreshToken,
       expiresIn: expiresInSeconds(
         this.configService.getOrThrow<string>('jwtAccessExpiresIn'),
       ),
     };
+  }
+
+  async refresh(dto: RefreshTokenDto): Promise<TokenResponseDto> {
+    const payload = await this.verifyRefreshToken(dto.refreshToken);
+    const session = await this.sessionModel!.findOne({
+      sid: payload.sid,
+      userId: payload.sub,
+      revokedAt: null,
+    }).exec();
+    if (
+      !session ||
+      session.expiresAt <= new Date() ||
+      !this.matches(dto.refreshToken, session.tokenHash)
+    ) {
+      throw this.invalidRefreshError();
+    }
+    await this.sessionModel!.updateOne(
+      { sid: payload.sid, revokedAt: null },
+      { $set: { revokedAt: new Date() } },
+    ).exec();
+    const refreshToken = await this.createRefreshToken(payload.sub);
+    const accessToken = await this.jwtService.signAsync({
+      sub: payload.sub,
+      type: ACCESS_TOKEN_TYPE,
+    });
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn: expiresInSeconds(
+        this.configService.getOrThrow<string>('jwtAccessExpiresIn'),
+      ),
+    };
+  }
+
+  async logout(dto: RefreshTokenDto): Promise<void> {
+    try {
+      const payload = await this.verifyRefreshToken(dto.refreshToken);
+      await this.sessionModel!.updateOne(
+        { sid: payload.sid, userId: payload.sub, revokedAt: null },
+        { $set: { revokedAt: new Date() } },
+      ).exec();
+    } catch {
+      // Logout is intentionally idempotent.
+    }
+  }
+
+  private async createRefreshToken(userId: string): Promise<string> {
+    const sid = randomUUID();
+    const expiresIn = this.configService.getOrThrow<string>(
+      'jwtRefreshExpiresIn',
+    );
+    const token = await new JwtService({
+      secret: this.configService.getOrThrow<string>('jwtRefreshSecret'),
+    }).signAsync({ sub: userId, type: REFRESH_TOKEN_TYPE, sid }, { expiresIn });
+    await this.sessionModel!.create({
+      sid,
+      userId,
+      tokenHash: this.hash(token),
+      expiresAt: new Date(Date.now() + expiresInSeconds(expiresIn) * 1000),
+      revokedAt: null,
+    });
+    return token;
+  }
+
+  private async verifyRefreshToken(
+    token: string,
+  ): Promise<{ sub: string; sid: string; type: string }> {
+    try {
+      const payload = await new JwtService({
+        secret: this.configService.getOrThrow<string>('jwtRefreshSecret'),
+      }).verifyAsync<{ sub: string; sid: string; type: string }>(token);
+      if (payload.type !== REFRESH_TOKEN_TYPE || !payload.sub || !payload.sid)
+        throw new Error();
+      return payload;
+    } catch {
+      throw this.invalidRefreshError();
+    }
+  }
+
+  private hash(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
+  }
+  private matches(token: string, hash: string): boolean {
+    return this.hash(token) === hash;
+  }
+  private invalidRefreshError(): ApplicationException {
+    return new ApplicationException(
+      401,
+      ErrorCode.INVALID_REFRESH_TOKEN,
+      'Invalid refresh token',
+    );
   }
 }

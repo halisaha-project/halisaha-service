@@ -69,18 +69,30 @@ describe('Auth registration', () => {
       } as unknown as UsersService;
       const signAsync = jest.fn().mockResolvedValue('access-token');
       const config = {
-        getOrThrow: jest.fn().mockReturnValue('15m'),
+        getOrThrow: jest.fn((key: string) =>
+          key === 'jwtRefreshSecret'
+            ? 'refresh-secret'
+            : key === 'jwtRefreshExpiresIn'
+              ? '30d'
+              : '15m',
+        ),
       } as unknown as ConfigService;
       const service = new AuthService(
         users,
         { signAsync } as unknown as JwtService,
         config,
+        { create: jest.fn().mockResolvedValue({}) } as never,
       );
       const result = await service.login({
         identifier: `  ${kind === 'email' ? 'MAIL@EXAMPLE.COM' : 'User'}  `,
         password: 'password',
       });
-      expect(result).toEqual({ accessToken: 'access-token', expiresIn: 900 });
+      expect(result).toEqual(
+        expect.objectContaining({
+          accessToken: 'access-token',
+          expiresIn: 900,
+        }),
+      );
       expect(lookup).toHaveBeenCalledWith(
         kind === 'email' ? 'mail@example.com' : 'user',
       );

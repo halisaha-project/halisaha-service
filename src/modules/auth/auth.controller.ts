@@ -3,6 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
@@ -28,5 +29,22 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() dto: LoginDto): Promise<TokenResponseDto> {
     return this.authService.login(dto);
+  }
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Rotate a refresh token' })
+  @ApiResponse({ status: HttpStatus.OK, type: TokenResponseDto })
+  refresh(@Body() dto: RefreshTokenDto): Promise<TokenResponseDto> {
+    return this.authService.refresh(dto);
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Revoke a refresh session' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Refresh session revoked',
+  })
+  async logout(@Body() dto: RefreshTokenDto): Promise<void> {
+    await this.authService.logout(dto);
   }
 }

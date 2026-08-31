@@ -4,6 +4,8 @@ export interface EnvironmentVariables {
   MONGODB_URI?: string;
   JWT_ACCESS_SECRET?: string;
   JWT_ACCESS_EXPIRES_IN?: string;
+  JWT_REFRESH_SECRET?: string;
+  JWT_REFRESH_EXPIRES_IN?: string;
 }
 
 export function validateEnvironment(
@@ -38,6 +40,18 @@ export function validateEnvironment(
     throw new Error('JWT_ACCESS_EXPIRES_IN must be a non-empty string');
   }
 
+  const jwtRefreshSecret = config.JWT_REFRESH_SECRET;
+  if (typeof jwtRefreshSecret !== 'string' || jwtRefreshSecret.trim() === '') {
+    throw new Error('JWT_REFRESH_SECRET is required');
+  }
+  const jwtRefreshExpiresIn = config.JWT_REFRESH_EXPIRES_IN ?? '30d';
+  if (
+    typeof jwtRefreshExpiresIn !== 'string' ||
+    jwtRefreshExpiresIn.trim() === ''
+  ) {
+    throw new Error('JWT_REFRESH_EXPIRES_IN must be a non-empty string');
+  }
+
   try {
     const parsedUri = new URL(mongodbUri);
     if (!['mongodb:', 'mongodb+srv:'].includes(parsedUri.protocol)) {
@@ -53,5 +67,7 @@ export function validateEnvironment(
     MONGODB_URI: mongodbUri,
     JWT_ACCESS_SECRET: jwtAccessSecret,
     JWT_ACCESS_EXPIRES_IN: jwtAccessExpiresIn,
+    JWT_REFRESH_SECRET: jwtRefreshSecret,
+    JWT_REFRESH_EXPIRES_IN: jwtRefreshExpiresIn,
   };
 }
