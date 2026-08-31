@@ -72,22 +72,19 @@ export class AuthService {
 
   async refresh(dto: RefreshTokenDto): Promise<TokenResponseDto> {
     const payload = await this.verifyRefreshToken(dto.refreshToken);
-    const session = await this.sessionModel!.findOne({
-      sid: payload.sid,
-      userId: payload.sub,
-      revokedAt: null,
-    }).exec();
-    if (
-      !session ||
-      session.expiresAt <= new Date() ||
-      !this.matches(dto.refreshToken, session.tokenHash)
-    ) {
-      throw this.invalidRefreshError();
-    }
-    await this.sessionModel!.updateOne(
-      { sid: payload.sid, revokedAt: null },
-      { $set: { revokedAt: new Date() } },
+    const now = new Date();
+    const claimed = await this.sessionModel!.findOneAndUpdate(
+      {
+        sid: payload.sid,
+        userId: payload.sub,
+        tokenHash: this.hash(dto.refreshToken),
+        revokedAt: null,
+        expiresAt: { $gt: now },
+      },
+      { $set: { revokedAt: now } },
+      { new: true },
     ).exec();
+    if (!claimed) throw this.invalidRefreshError();
     const refreshToken = await this.createRefreshToken(payload.sub);
     const accessToken = await this.jwtService.signAsync({
       sub: payload.sub,
