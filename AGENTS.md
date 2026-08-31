@@ -1,580 +1,81 @@
-# Halisaha Service — Codex Instructions
+# Halisaha Service — Codex Checkpoint
 
-## Project Context
+## Project
 
-This repository is the backend service of Halisaha App.
+Clean backend rebuild of the former Express/JavaScript/Mongoose halısaha app. The legacy implementation is historical only and must not be restored. Current target stack:
 
-The application will eventually support:
+- NestJS + TypeScript
+- MongoDB + Mongoose
+- REST API under `/api/v1`
+- Client-independent API for React Web and React Native/Expo
 
-- React Web
-- React Native / Expo for Android and iOS
-- A shared backend API for all clients
+Use feature-oriented modules. Auth and Users remain separate; Auth owns OTP, email verification, password reset, and sessions; Groups owns invitations; Positions is standalone reference data. Avoid generic BaseRepository abstractions, universal response wrappers, and plaintext security tokens. Successful responses are ordinary JSON and errors use the existing normalized application-error contract.
 
-The current backend is a legacy Express.js application written in JavaScript and uses MongoDB through Mongoose.
+## Current implementation
 
-Current stack:
+Foundation is implemented: configuration and validation, global ValidationPipe, standardized exception filter, health endpoint, MongoDB infrastructure, and `MongoIdPipe`.
 
-- Node.js
-- JavaScript
-- Express.js
-- MongoDB
-- Mongoose
-- JWT
-- bcrypt
-- Nodemailer
-- Swagger Autogen
+Positions are implemented with canonical reference positions `GK`, `DEF`, `MID`, and `FWD`; read endpoints and seed infrastructure exist, with no public write endpoints.
 
-The backend is going to be incrementally refactored into a production-ready NestJS + TypeScript application.
+Users are implemented with `name`, `surname`, normalized lowercase `username`/`email`, `passwordHash`, and `emailVerified`. Email and username are unique; `passwordHash` uses `select: false`; credential lookup explicitly selects it; safe JSON serialization removes password internals.
 
-Target backend stack:
+Auth is implemented:
 
-- Node.js
-- TypeScript
-- NestJS
-- MongoDB
-- Mongoose / @nestjs/mongoose
-- JWT authentication
-- OpenAPI / Swagger
-- Jest
-- Supertest
+- Registration: bcrypt (`BCRYPT_ROUNDS = 12`), `POST /api/v1/auth/register`, duplicate protection, safe response, no automatic login.
+- Login: email or username identifier normalization, generic `INVALID_CREDENTIALS`, minimal access payload `{ sub, type: 'access' }`.
+- Access authentication: `JwtAccessStrategy`, `JwtAuthGuard`, `@CurrentUser()`, minimal `{ userId }` identity, `INVALID_ACCESS_TOKEN`, and `GET /api/v1/users/me`.
+- Refresh sessions: Auth-owned `AuthSession`, separate access/refresh secrets, SHA-256 token hashes, `sid`, rotation, logout, and atomic MongoDB session claim. Concurrent reuse permits only one claimant. A failure after revoking the old session and before creating its replacement may require reauthentication.
+- Email verification: hashed high-entropy one-time tokens, 24-hour expiry, atomic consumption, anti-enumeration resend, and mockable/no-op mail delivery.
+- Password reset: anti-enumeration request, hashed one-time tokens, atomic consumption, bcrypt password replacement, active refresh-session revocation, and concurrent single-use protection. Token consumption, password update, and session revocation are separate operations; do not add transactions casually.
 
-Do not assume the existing behavior is disposable. Existing API behavior and business rules must first be understood and documented before they are changed.
+Groups and invitations are implemented with authenticated member/owner authorization, safe group responses, owner-only invitations, hashed one-time invitation tokens, atomic claim, `$addToSet` membership, resend invalidation, and group-deletion invalidation. Invitation claim and membership update remain separate operations.
 
----
+Matches are implemented with authenticated group scoping, draft/ready/completed/cancelled statuses, owner-only management, participant validation/deduplication (maximum 30), stale lineup clearing, deterministic sorted alternating home/away formation, and minimal owner-only `ready -> completed` transition. No position or skill balancing exists.
 
-## Core Refactoring Principle
+Voting is implemented with authenticated match/group scoping, completed-match-only eligibility, participant checks, self-vote prevention, integer scores 1–5, compound unique index `(matchId, voterUserId, targetUserId)`, safe vote responses, match-scoped listing, and aggregate results. Voter identity always comes from JWT, never request input.
 
-Do NOT perform a big-bang rewrite.
+## Configuration and security
 
-The migration must be incremental.
+Environment variables include `MONGODB_URI`, `MONGODB_TEST_URI`, `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_SECRET`, and `JWT_REFRESH_EXPIRES_IN`. Never commit `.env` or secrets. Never fall back from `MONGODB_TEST_URI` to `MONGODB_URI`.
 
-Preferred process:
+Never expose or persist `passwordHash` in API responses. Never persist raw refresh, verification, reset, or invitation tokens. Preserve anti-enumeration behavior and authentication/authorization checks. Do not trust client-supplied voter identity or authenticated user IDs.
 
-1. Analyze the existing implementation.
-2. Document current behavior.
-3. Identify business rules and dependencies.
-4. Propose the smallest reasonable refactor.
-5. Implement one isolated change.
-6. Run relevant tests.
-7. Review the resulting diff.
-8. Continue with the next isolated change.
+## Testing
 
-Existing production behavior must be preserved unless the task explicitly requests a behavior change.
-
----
-
-## Legacy Architecture
-
-The current source structure is approximately:
+Normal commands:
 
 ```text
-src/
-├── config/
-├── controllers/
-├── middlewares/
-├── models/
-├── routers/
-└── utils/
+npm run lint
+npm test -- --runInBand
+npm run build
+git diff --check
 ```
 
-Important legacy domains currently include:
+The unit suite covers the implemented domains and currently contains roughly 53 tests. Mocked HTTP contract tests exist but may fail in the Codex sandbox because binding localhost produces `listen EPERM`; do not change runtime behavior to work around that.
 
-- authentication
-- users
-- groups
-- group invitations
-- matches
-- voting
-- OTP
-- player positions
-
-During analysis, determine the real domain relationships instead of assuming every current file should become a separate NestJS module.
-
-For example:
-
-- OTP may belong to authentication.
-- Group invitations may belong inside the groups domain.
-- Positions may belong to users, matches, or a shared domain.
-
-Make architectural recommendations based on actual usage in the codebase.
-
----
-
-## Target Architecture
-
-The target architecture is feature-oriented.
-
-Preferred high-level structure:
+Real MongoDB integration tests use:
 
 ```text
-src/
-├── main.ts
-├── app.module.ts
-│
-├── config/
-│
-├── common/
-│   ├── decorators/
-│   ├── exceptions/
-│   ├── filters/
-│   ├── guards/
-│   ├── interceptors/
-│   ├── pipes/
-│   └── utils/
-│
-├── infrastructure/
-│   ├── database/
-│   └── mail/
-│
-└── modules/
-    ├── auth/
-    ├── users/
-    ├── groups/
-    ├── matches/
-    └── voting/
+npm run test:integration -- --runInBand
 ```
 
-A feature module may use a structure such as:
+Integration Jest setup loads `.env`, requires only `MONGODB_TEST_URI`, refuses databases whose name is not clearly integration-only, does not bind HTTP ports, cleans collections deterministically between tests, and preserves indexes. The dedicated database is `halisaha_integration_test`; development database is `halisaha`. No `mongodb-memory-server` is used.
 
-```text
-modules/
-└── matches/
-    ├── controllers/
-    ├── services/
-    ├── repositories/
-    ├── schemas/
-    ├── dto/
-    ├── interfaces/
-    └── match.module.ts
-```
+Integration coverage includes schema indexes, unique vote enforcement, user normalization/serialization, match/team persistence, voting aggregation, atomic AuthSession claims, email-verification single-use behavior, password-reset behavior, and concurrent invitation acceptance. If Atlas SRV resolution fails with `querySrv ECONNREFUSED`, report the exact error; do not interpret it as a production defect without a successful database run.
 
-Do not create unnecessary abstraction layers purely for architectural appearance.
+## Working rules
 
-Repositories should be introduced where isolating persistence logic provides clear value.
+1. Read this file and inspect actual code before changing anything.
+2. Treat code and tests as the source of truth if this checkpoint differs.
+3. Work incrementally with small, focused diffs.
+4. Do not recreate implemented domains or restore legacy Express code.
+5. Do not add unrelated product features or frontend concerns.
+6. Preserve security guarantees and validate request DTOs with the existing global pipe.
+7. Before changing an intentional atomicity/failure-window tradeoff, explain the tradeoff and test the change.
+8. Run relevant tests, inspect the diff, and report remaining risks.
 
----
+## Next planned phase
 
-## Layer Responsibilities
+Core backend and integration-test architecture are substantially complete. The next planned work is real mail-provider integration behind the existing `MailService`, followed by environment/security hardening, deployment readiness, Swagger/API review, and production-readiness cleanup. Before adding a provider, inspect `MailService` and its Auth/Groups call sites; keep provider details behind that abstraction.
 
-### Controller
-
-Controllers are responsible only for transport-layer concerns.
-
-They may:
-
-- receive request input
-- invoke DTO validation
-- access authenticated user information
-- call application services
-- return responses
-
-Controllers must NOT contain substantial business logic or database queries.
-
----
-
-### Service
-
-Services contain application and business logic.
-
-Examples:
-
-- permission checks
-- group membership rules
-- match creation rules
-- voting rules
-- invitation workflows
-- authentication workflows
-
-Services should not depend directly on Express request or response objects.
-
----
-
-### Repository
-
-Repositories isolate persistence behavior where useful.
-
-Examples:
-
-- MongoDB queries
-- Mongoose query composition
-- persistence-specific filtering
-- aggregation pipelines
-
-Business decisions must not be hidden inside repositories.
-
----
-
-### Schema
-
-Mongoose schemas describe persistence models.
-
-Do not expose persistence schemas directly as API contracts when a DTO or response model is more appropriate.
-
----
-
-### DTO
-
-Request DTOs and response DTOs should be explicit where useful.
-
-Use:
-
-- class-validator
-- class-transformer
-
-Avoid trusting raw request payloads.
-
----
-
-## API Design
-
-The future API should support versioning.
-
-Preferred prefix:
-
-```text
-/api/v1
-```
-
-Example:
-
-```text
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-GET  /api/v1/users/me
-GET  /api/v1/groups
-POST /api/v1/matches
-```
-
-Do not silently rename or remove existing endpoints during migration.
-
-If an endpoint should change, document:
-
-- current endpoint
-- proposed endpoint
-- compatibility impact
-- migration strategy
-
----
-
-## Web and Mobile Compatibility
-
-The backend must remain client-independent.
-
-It must support both:
-
-- React Web
-- React Native / Expo
-
-Never introduce browser-only assumptions into backend API behavior.
-
-Authentication flows must eventually support mobile secure token storage and web authentication.
-
-Avoid making API contracts dependent on frontend implementation details.
-
----
-
-## Authentication
-
-Authentication requires special care because the future application will have web and mobile clients.
-
-The target authentication architecture will likely include:
-
-- access tokens
-- refresh tokens
-- logout/revocation flow
-- authenticated `/me` endpoint
-- OTP verification where required
-
-Do not implement the final authentication architecture without first documenting the existing authentication and OTP behavior.
-
-Security-sensitive behavior must not be changed casually.
-
----
-
-## Error Handling
-
-The target backend should eventually have a consistent error model.
-
-Preferred conceptual shape:
-
-```json
-{
-  "data": null,
-  "error": {
-    "code": "MATCH_NOT_FOUND",
-    "message": "Match could not be found."
-  }
-}
-```
-
-Business logic should expose stable machine-readable error codes where useful.
-
-Frontend clients should not need to parse error message text to determine application behavior.
-
-During legacy migration, preserve existing response behavior unless explicitly instructed otherwise.
-
----
-
-## API Responses
-
-Do not introduce response wrappers globally without considering compatibility with the current frontend.
-
-First document the current response structures.
-
-Any future standardization should be introduced intentionally.
-
----
-
-## Database
-
-The current database is MongoDB.
-
-MongoDB will remain the database during the initial backend refactor.
-
-Do NOT migrate the application to PostgreSQL or another database unless explicitly requested.
-
-Use NestJS MongoDB integration through:
-
-```text
-@nestjs/mongoose
-mongoose
-```
-
-when the NestJS migration begins.
-
-During analysis, identify:
-
-- model relationships
-- ObjectId references
-- embedded documents
-- indexes
-- uniqueness constraints
-- queries that may cause performance issues
-- possible concurrency issues
-- potentially missing database constraints
-
----
-
-## Match and Voting Integrity
-
-Match creation, membership, voting, invitations, and related workflows are considered important business logic.
-
-When changing these areas:
-
-- understand existing behavior first
-- identify authorization rules
-- identify concurrency risks
-- preserve domain invariants
-- add tests before or together with behavioral changes
-
-Do not rely exclusively on frontend validation for critical rules.
-
----
-
-## Tests
-
-The legacy project currently has little or no automated test infrastructure.
-
-The target test stack is:
-
-- Jest
-- Supertest
-
-Preferred priorities:
-
-1. Integration tests for critical business workflows.
-2. E2E tests for important API flows.
-3. Unit tests where business logic is isolated and meaningful to test.
-
-Critical areas include:
-
-- authentication
-- OTP verification
-- group membership
-- group invitations
-- match creation
-- voting
-- authorization and permissions
-
-Do not generate large quantities of superficial tests merely to increase coverage.
-
----
-
-## OpenAPI
-
-The target backend should expose an accurate Swagger/OpenAPI specification.
-
-OpenAPI will eventually be used as an API contract between:
-
-- NestJS backend
-- React Web
-- React Native mobile application
-
-When the NestJS migration begins, prefer `@nestjs/swagger`.
-
-The existing Swagger Autogen setup should first be analyzed before replacement.
-
----
-
-## Configuration
-
-Application configuration must eventually be centralized.
-
-Environment-specific configuration should support:
-
-- local
-- development
-- staging
-- production
-
-Secrets must never be committed to the repository.
-
-The repository should eventually contain an `.env.example` file documenting required environment variables without real secret values.
-
----
-
-## Logging
-
-Avoid uncontrolled production `console.log` usage.
-
-The target backend should eventually have structured application logging.
-
-Do not introduce a complex observability stack during early migration unless explicitly requested.
-
----
-
-## Dependency Policy
-
-Before adding a new dependency:
-
-1. Check whether NestJS or the existing stack already provides the required functionality.
-2. Avoid duplicate libraries solving the same problem.
-3. Avoid unnecessary abstractions.
-4. Prefer actively maintained, widely used packages.
-
-Do not upgrade all dependencies at once during architectural refactoring unless required.
-
-Dependency upgrades and architecture changes should preferably be separate changes.
-
----
-
-## Coding Style
-
-For new TypeScript code:
-
-- use strict typing
-- avoid `any` unless genuinely necessary
-- prefer explicit domain types
-- prefer async/await
-- keep functions focused
-- prefer readable code over clever abstractions
-- avoid unnecessary inheritance
-- avoid premature generic frameworks
-- use descriptive names
-
-Do not perform unrelated formatting across the entire repository while implementing a focused change.
-
-Keep diffs reviewable.
-
----
-
-## Git and Change Scope
-
-Do not modify unrelated files.
-
-Do not delete legacy implementations until their replacement is verified.
-
-Prefer small commits and small diffs.
-
-For every requested implementation:
-
-1. inspect the relevant files
-2. state what needs to change
-3. make only the required changes
-4. run relevant validation/tests
-5. inspect the resulting diff
-6. report any remaining risks
-
----
-
-## Current Migration Roadmap
-
-The expected migration order is currently:
-
-```text
-1. Legacy backend analysis
-2. NestJS foundation
-3. Common infrastructure
-4. Authentication + OTP
-5. Users
-6. Groups + invitations
-7. Matches
-8. Voting
-9. Automated tests
-10. OpenAPI stabilization
-11. Remove legacy Express implementation
-12. Mobile readiness review
-```
-
-This roadmap may change after legacy analysis.
-
-Do not treat it as permission to implement later phases unless explicitly requested.
-
----
-
-## Current Task Safety Rule
-
-When asked to analyze the repository:
-
-DO NOT modify application code unless explicitly instructed.
-
-When asked to create documentation only:
-
-Only create or update the requested documentation files.
-
-When asked to implement one migration step:
-
-Do not automatically continue with subsequent migration steps.
-
----
-
-## First Analysis Goal
-
-Before beginning the NestJS migration, create a complete picture of the legacy backend.
-
-The analysis should identify:
-
-- every REST endpoint
-- HTTP method
-- route path
-- authentication requirements
-- request params
-- query params
-- request bodies
-- response structures
-- status codes where identifiable
-- controllers used
-- models used
-- model relationships
-- JWT behavior
-- OTP behavior
-- mail behavior
-- authorization rules
-- group membership rules
-- invitation rules
-- match rules
-- voting rules
-- business logic located in controllers
-- business logic located in utility functions
-- possible bugs
-- security risks
-- architecture problems
-- database consistency risks
-
-Analysis must distinguish between:
-
-- confirmed behavior from code
-- likely behavior inferred from code
-- recommendations for the future architecture
-
-Do not mix current behavior with proposed behavior.
+Do not continue to new product domains or infrastructure/deployment work without an explicit request. Do not commit automatically.
