@@ -12,7 +12,8 @@
     "seed:positions": "npm run build && node dist/scripts/seed-positions.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:integration": "jest --config ./test/jest-integration.json"
   },
   "license": "ISC",
   "dependencies": {
@@ -27,6 +28,8 @@
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "dotenv": "^16.4.5",
+    "mongodb": "^7.6.0",
     "mongoose": "^8.8.4",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -68,6 +71,10 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "\\.integration-spec\\.ts$"
+    ]
   }
 }
