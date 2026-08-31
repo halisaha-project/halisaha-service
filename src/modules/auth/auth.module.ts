@@ -8,12 +8,18 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthSession, AuthSessionSchema } from './schemas/auth-session.schema';
+import {
+  EmailVerification,
+  EmailVerificationSchema,
+} from './schemas/email-verification.schema';
+import { MailService } from '../../infrastructure/mail/mail.service';
 
 @Module({
   imports: [
     UsersModule,
     MongooseModule.forFeature([
       { name: AuthSession.name, schema: AuthSessionSchema },
+      { name: EmailVerification.name, schema: EmailVerificationSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -27,7 +33,7 @@ import { AuthSession, AuthSessionSchema } from './schemas/auth-session.schema';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAccessStrategy, JwtAuthGuard],
+  providers: [AuthService, JwtAccessStrategy, JwtAuthGuard, MailService],
   exports: [JwtAuthGuard],
 })
 export class AuthModule {}

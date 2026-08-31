@@ -4,6 +4,8 @@ import { UserResponseDto } from '../users/dto/user-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { EmailVerificationDto } from './dto/email-verification.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
@@ -46,5 +48,24 @@ export class AuthController {
   })
   async logout(@Body() dto: RefreshTokenDto): Promise<void> {
     await this.authService.logout(dto);
+  }
+
+  @Post('email-verification/verify')
+  @ApiOperation({ summary: 'Verify an email address' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Email verified' })
+  verifyEmail(@Body() dto: EmailVerificationDto): Promise<{ verified: true }> {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Post('email-verification/resend')
+  @ApiOperation({ summary: 'Request an email verification message' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Verification request accepted',
+  })
+  resendVerification(
+    @Body() dto: ResendVerificationDto,
+  ): Promise<{ accepted: true }> {
+    return this.authService.resendVerification(dto);
   }
 }

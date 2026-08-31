@@ -20,6 +20,10 @@ import { ApplicationException } from '../../common/errors/application.exception'
 import { ErrorCode } from '../../common/errors/error-code';
 import { AuthSession } from './schemas/auth-session.schema';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { EmailVerificationDto } from './dto/email-verification.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { EmailVerification } from './schemas/email-verification.schema';
+import { MailService } from '../../infrastructure/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +33,9 @@ export class AuthService {
     private readonly configService: ConfigService,
     @InjectModel(AuthSession.name)
     private readonly sessionModel?: Model<AuthSession>,
+    @InjectModel(EmailVerification.name)
+    private readonly verificationModel?: Model<EmailVerification>,
+    private readonly mailService?: MailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<UserResponseDto> {
@@ -40,8 +47,60 @@ export class AuthService {
       email: dto.email,
       passwordHash,
     });
+    await this.issueVerification(user.email, String(user._id));
 
     return user.toJSON() as unknown as UserResponseDto;
+  }
+
+  async verifyEmail(dto: EmailVerificationDto): Promise<{ verified: true }> {
+    const now = new Date();
+    const record = await this.verificationModel!.findOneAndUpdate(
+      {
+        tokenHash: this.hash(dto.token),
+        consumedAt: null,
+        expiresAt: { $gt: now },
+      },
+      { $set: { consumedAt: now } },
+      { new: true },
+    ).exec();
+    if (!record)
+      throw new ApplicationException(
+        400,
+        ErrorCode.INVALID_EMAIL_VERIFICATION_TOKEN,
+        'Invalid email verification token',
+      );
+    await this.usersService.markEmailVerified(String(record.userId));
+    return { verified: true };
+  }
+
+  async resendVerification(
+    dto: ResendVerificationDto,
+  ): Promise<{ accepted: true }> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (user && !user.emailVerified) {
+      await this.verificationModel!.updateMany(
+        { userId: user._id, consumedAt: null },
+        { $set: { consumedAt: new Date() } },
+      ).exec();
+      await this.issueVerification(user.email, String(user._id));
+    }
+    return { accepted: true };
+  }
+
+  private async issueVerification(
+    email: string,
+    userId: string,
+  ): Promise<void> {
+    if (!this.verificationModel) return;
+    const token =
+      randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', '');
+    await this.verificationModel!.create({
+      userId,
+      tokenHash: this.hash(token),
+      expiresAt: new Date(Date.now() + 86400000),
+      consumedAt: null,
+    });
+    await this.mailService?.sendEmailVerification(email, token);
   }
 
   async login(dto: LoginDto): Promise<TokenResponseDto> {
