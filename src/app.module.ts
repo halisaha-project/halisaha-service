@@ -8,6 +8,7 @@ import { PositionsModule } from './modules/positions/positions.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupsModule } from './modules/groups/groups.module';
+import { MatchesModule } from './modules/matches/matches.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { GroupsModule } from './modules/groups/groups.module';
     UsersModule,
     AuthModule,
     GroupsModule,
+    MatchesModule,
   ],
 })
 export class AppModule {}

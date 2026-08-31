@@ -22,5 +22,6 @@ import {
   ],
   controllers: [GroupsController],
   providers: [GroupsService, MailService],
+  exports: [GroupsService],
 })
 export class GroupsModule {}

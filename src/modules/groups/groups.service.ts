@@ -30,6 +30,18 @@ export class GroupsService {
     return this.safe(group);
   }
 
+  async assertMember(groupId: string, userId: string): Promise<Group> {
+    const group = await this.required(groupId);
+    this.requireMember(group, userId);
+    return group;
+  }
+
+  async assertOwner(groupId: string, userId: string): Promise<Group> {
+    const group = await this.required(groupId);
+    this.requireOwner(group, userId);
+    return group;
+  }
+
   async list(userId: string): Promise<GroupResponseDto[]> {
     const groups = await this.groupModel.find({ memberIds: userId }).exec();
     return groups.map((group) => this.safe(group));
