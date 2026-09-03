@@ -210,6 +210,13 @@ describe('real Auth and Groups concurrency behavior', () => {
       email: 'invited@example.com',
       passwordHash: 'hash',
     });
+    const other = await users.create({
+      name: 'Other',
+      surname: 'C',
+      username: 'other',
+      email: 'other@example.com',
+      passwordHash: 'hash',
+    });
     const group = await groups.create({
       name: 'Group',
       ownerId: owner._id,
@@ -231,6 +238,14 @@ describe('real Auth and Groups concurrency behavior', () => {
       new UsersService(users),
       { sendGroupInvitation: jest.fn() } as never,
     );
+    expect(
+      await invitations.findOne({ invitedUserId: String(invited._id) }).exec(),
+    ).not.toBeNull();
+    await expect(
+      service.accept({ token }, String(other._id)),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'INVALID_GROUP_INVITATION' }),
+    });
     const attempts = await Promise.allSettled([
       service.accept({ token }, String(invited._id)),
       service.accept({ token }, String(invited._id)),

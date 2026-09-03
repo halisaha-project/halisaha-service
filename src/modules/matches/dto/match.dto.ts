@@ -8,7 +8,9 @@ import {
   MinLength,
   IsMongoId,
   ArrayMaxSize,
+  Equals,
 } from 'class-validator';
+import { MatchStatus } from '../schemas/match.schema';
 export class CreateMatchDto {
   @ApiProperty()
   @IsString()
@@ -35,7 +37,9 @@ export class ParticipantsDto {
 }
 export class MatchStatusDto {
   @ApiProperty({ example: 'completed' })
-  status!: string;
+  @IsString()
+  @Equals(MatchStatus.COMPLETED)
+  status!: MatchStatus.COMPLETED;
 }
 export class MatchResponseDto {
   @ApiProperty() id!: string;

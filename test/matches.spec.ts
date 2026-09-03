@@ -52,6 +52,28 @@ function serviceFor(group = { ownerId: 'owner', memberIds: ids(30) }) {
 }
 
 describe('MatchesService', () => {
+  it("atomically transitions an owner's ready match to completed", async () => {
+    const h = serviceFor();
+    h.findOneAndUpdate.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(match(ids(2), MatchStatus.COMPLETED)),
+    });
+
+    const result = await h.service.updateStatus(
+      'group',
+      'match',
+      MatchStatus.COMPLETED,
+      'owner',
+    );
+
+    expect(h.groups.assertOwner).toHaveBeenCalledWith('group', 'owner');
+    expect(h.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 'match', groupId: 'group', status: MatchStatus.READY },
+      { status: MatchStatus.COMPLETED },
+      { new: true },
+    );
+    expect(result.status).toBe(MatchStatus.COMPLETED);
+  });
+
   it('creates draft matches from the authenticated owner', async () => {
     const h = serviceFor();
     h.create.mockResolvedValue(match([]));
