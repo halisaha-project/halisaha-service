@@ -24,7 +24,7 @@ import { GLOBAL_RATE_LIMIT } from './common/security/rate-limit.constants';
     }),
     ThrottlerModule.forRoot([{ name: 'default', ...GLOBAL_RATE_LIMIT }]),
     DatabaseModule,
-    MailModule.forRoot(),
+    MailModule,
     HealthModule,
     PositionsModule,
     UsersModule,
