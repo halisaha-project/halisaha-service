@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MongoIdPipe } from '../../common/pipes/mongo-id.pipe';
@@ -17,6 +16,8 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { AcceptInvitationDto, InviteUserDto } from './dto/invitation.dto';
 import { GroupNameDto } from './dto/group.dto';
 import { GroupsService } from './groups.service';
+import { Throttle } from '@nestjs/throttler';
+import { AUTH_RATE_LIMITS } from '../../common/security/rate-limit.constants';
 
 @ApiTags('groups')
 @ApiBearerAuth()
@@ -40,27 +41,32 @@ export class GroupsController {
   ) {
     return this.groupsService.accept(dto, user.userId);
   }
-  @Get(':groupId') @UsePipes(MongoIdPipe) get(
-    @Param('groupId') id: string,
+  @Get(':groupId')
+  get(
+    @Param('groupId', MongoIdPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.groupsService.get(id, user.userId);
   }
-  @Patch(':groupId') @UsePipes(MongoIdPipe) update(
-    @Param('groupId') id: string,
+  @Patch(':groupId')
+  update(
+    @Param('groupId', MongoIdPipe) id: string,
     @Body() dto: GroupNameDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.groupsService.update(id, dto, user.userId);
   }
-  @Delete(':groupId') @UsePipes(MongoIdPipe) remove(
-    @Param('groupId') id: string,
+  @Delete(':groupId')
+  remove(
+    @Param('groupId', MongoIdPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.groupsService.remove(id, user.userId);
   }
-  @Post(':groupId/invitations') @UsePipes(MongoIdPipe) invite(
-    @Param('groupId') id: string,
+  @Post(':groupId/invitations')
+  @Throttle({ default: AUTH_RATE_LIMITS.groupInvitation })
+  invite(
+    @Param('groupId', MongoIdPipe) id: string,
     @Body() dto: InviteUserDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {

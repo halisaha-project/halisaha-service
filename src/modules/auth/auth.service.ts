@@ -105,7 +105,10 @@ export class AuthService {
       expiresAt: new Date(Date.now() + 86400000),
       consumedAt: null,
     });
-    await this.mailService?.sendEmailVerification(email, token);
+    await this.mailService?.sendEmailVerification({
+      recipientEmail: email,
+      token,
+    });
   }
 
   async login(dto: LoginDto): Promise<TokenResponseDto> {
@@ -151,7 +154,10 @@ export class AuthService {
         expiresAt: new Date(Date.now() + 3600000),
         consumedAt: null,
       });
-      await this.mailService?.sendPasswordReset(user.email, token);
+      await this.mailService?.sendPasswordReset({
+        recipientEmail: user.email,
+        token,
+      });
     }
     return { accepted: true };
   }

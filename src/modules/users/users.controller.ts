@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -29,13 +29,12 @@ export class UsersController {
   }
 
   @Get(':userId')
-  @UsePipes(MongoIdPipe)
   @ApiOperation({ summary: 'Get a public user profile' })
   @ApiParam({ name: 'userId', example: '6658a63e957fdc8261e8912a' })
   @ApiResponse({ status: 200, type: UserResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid MongoDB identifier' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  findById(@Param('userId') userId: string) {
+  findById(@Param('userId', MongoIdPipe) userId: string) {
     return this.usersService.findRequiredById(userId);
   }
 }

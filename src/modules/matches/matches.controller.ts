@@ -8,7 +8,6 @@ import {
   Post,
   Put,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MongoIdPipe } from '../../common/pipes/mongo-id.pipe';
@@ -28,60 +27,68 @@ import { MatchesService } from './matches.service';
 @Controller({ path: 'groups/:groupId/matches', version: '1' })
 export class MatchesController {
   constructor(private readonly service: MatchesService) {}
-  @Patch(':matchId/status') @UsePipes(MongoIdPipe) updateStatus(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Patch(':matchId/status')
+  updateStatus(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @Body() d: MatchStatusDto,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.updateStatus(g, m, d.status, u.userId);
   }
-  @Post() @UsePipes(MongoIdPipe) create(
-    @Param('groupId') g: string,
+  @Post()
+  create(
+    @Param('groupId', MongoIdPipe) g: string,
     @Body() d: CreateMatchDto,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.create(g, d, u.userId);
   }
-  @Get() @UsePipes(MongoIdPipe) list(
-    @Param('groupId') g: string,
+  @Get()
+  list(
+    @Param('groupId', MongoIdPipe) g: string,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.list(g, u.userId);
   }
-  @Get(':matchId') @UsePipes(MongoIdPipe) get(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Get(':matchId')
+  get(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.get(g, m, u.userId);
   }
-  @Patch(':matchId') @UsePipes(MongoIdPipe) update(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Patch(':matchId')
+  update(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @Body() d: UpdateMatchDto,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.update(g, m, d, u.userId);
   }
-  @Delete(':matchId') @UsePipes(MongoIdPipe) remove(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Delete(':matchId')
+  remove(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.remove(g, m, u.userId);
   }
-  @Put(':matchId/participants') @UsePipes(MongoIdPipe) participants(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Put(':matchId/participants')
+  participants(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @Body() d: ParticipantsDto,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.participants(g, m, d, u.userId);
   }
-  @Post(':matchId/generate-teams') @UsePipes(MongoIdPipe) generate(
-    @Param('groupId') g: string,
-    @Param('matchId') m: string,
+  @Post(':matchId/generate-teams')
+  generate(
+    @Param('groupId', MongoIdPipe) g: string,
+    @Param('matchId', MongoIdPipe) m: string,
     @CurrentUser() u: AuthenticatedUser,
   ) {
     return this.service.generate(g, m, u.userId);

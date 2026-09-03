@@ -12,7 +12,6 @@ import {
   EmailVerification,
   EmailVerificationSchema,
 } from './schemas/email-verification.schema';
-import { MailService } from '../../infrastructure/mail/mail.service';
 import {
   PasswordReset,
   PasswordResetSchema,
@@ -38,7 +37,7 @@ import {
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAccessStrategy, JwtAuthGuard, MailService],
+  providers: [AuthService, JwtAccessStrategy, JwtAuthGuard],
   exports: [JwtAuthGuard],
 })
 export class AuthModule {}

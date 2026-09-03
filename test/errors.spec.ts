@@ -1,4 +1,10 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ErrorCode } from '../src/common/errors/error-code';
 import { ApplicationException } from '../src/common/errors/application.exception';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
@@ -76,11 +82,30 @@ describe('HTTP error contract', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+    const logger = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     filter.catch(new Error('secret internals'), hostFor(unknownResponse));
     expect(unknownResponse.json).toHaveBeenCalledWith({
       statusCode: 500,
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Internal server error',
+    });
+    expect(logger).toHaveBeenCalledWith('Unhandled application error');
+    expect(logger.mock.calls.flat().join(' ')).not.toContain(
+      'secret internals',
+    );
+    logger.mockRestore();
+  });
+
+  it('normalizes rate-limit errors without implementation details', () => {
+    const response = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    new HttpExceptionFilter().catch(
+      new HttpException('throttler internals', HttpStatus.TOO_MANY_REQUESTS),
+      hostFor(response),
+    );
+    expect(response.json).toHaveBeenCalledWith({
+      statusCode: 429,
+      code: 'RATE_LIMITED',
+      message: 'Too many requests',
     });
   });
 });

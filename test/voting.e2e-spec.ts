@@ -1,4 +1,4 @@
-import { INestApplication, Module } from '@nestjs/common';
+import { ExecutionContext, INestApplication, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApplication } from '../src/bootstrap';
@@ -20,7 +20,16 @@ describe('Voting HTTP contract', () => {
   beforeAll(async () => {
     const ref = await Test.createTestingModule({ imports: [TestModule] })
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          context
+            .switchToHttp()
+            .getRequest<{ user: { userId: string } }>().user = {
+            userId: 'voter-id',
+          };
+          return true;
+        },
+      })
       .compile();
     app = ref.createNestApplication();
     configureApplication(app);

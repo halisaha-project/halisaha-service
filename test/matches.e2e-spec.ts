@@ -1,4 +1,4 @@
-import { INestApplication, Module } from '@nestjs/common';
+import { ExecutionContext, INestApplication, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApplication } from '../src/bootstrap';
@@ -12,6 +12,7 @@ describe('Matches HTTP contract', () => {
     create: jest.fn().mockResolvedValue({ status: 'draft' }),
     list: jest.fn().mockResolvedValue([]),
     get: jest.fn().mockResolvedValue({ id: 'm' }),
+    update: jest.fn().mockResolvedValue({ id: 'm', name: 'updated' }),
     participants: jest.fn().mockResolvedValue({ status: 'draft' }),
     generate: jest.fn().mockResolvedValue({ status: 'ready' }),
   };
@@ -23,7 +24,16 @@ describe('Matches HTTP contract', () => {
   beforeAll(async () => {
     const ref = await Test.createTestingModule({ imports: [TestModule] })
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          context
+            .switchToHttp()
+            .getRequest<{ user: { userId: string } }>().user = {
+            userId: 'owner-id',
+          };
+          return true;
+        },
+      })
       .compile();
     app = ref.createNestApplication();
     configureApplication(app);
@@ -48,11 +58,27 @@ describe('Matches HTTP contract', () => {
       )
       .expect(200);
     await request(app.getHttpServer())
+      .patch(
+        '/api/v1/groups/507f1f77bcf86cd799439011/matches/507f1f77bcf86cd799439012',
+      )
+      .send({ name: 'updated' })
+      .expect((response) => {
+        if (response.status !== 200) {
+          throw new Error(JSON.stringify(response.body));
+        }
+      })
+      .expect(200);
+    await request(app.getHttpServer())
       .put(
         '/api/v1/groups/507f1f77bcf86cd799439011/matches/507f1f77bcf86cd799439012/participants',
       )
-      .send({ participantUserIds: [] })
-      .expect(400);
+      .send({
+        participantUserIds: [
+          '507f1f77bcf86cd799439013',
+          '507f1f77bcf86cd799439014',
+        ],
+      })
+      .expect(200);
     await request(app.getHttpServer())
       .post(
         '/api/v1/groups/507f1f77bcf86cd799439011/matches/507f1f77bcf86cd799439012/generate-teams',

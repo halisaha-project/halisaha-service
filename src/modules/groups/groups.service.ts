@@ -120,7 +120,11 @@ export class GroupsService {
       acceptedAt: null,
       revokedAt: null,
     });
-    await this.mailService.sendGroupInvitation(target.email, token);
+    await this.mailService.sendGroupInvitation({
+      recipientEmail: target.email,
+      groupName: group.name,
+      token,
+    });
     return { invited: true };
   }
 

@@ -27,7 +27,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const payload = this.toPayload(exception, request);
 
     if (!(exception instanceof HttpException)) {
-      this.logger.error(exception);
+      this.logger.error('Unhandled application error');
     }
 
     response.status(payload.statusCode).json(payload);
@@ -47,6 +47,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
           statusCode,
           code: ErrorCode.NOT_FOUND,
           message: `Cannot ${request.method} ${request.url}`,
+        };
+      }
+      if (statusCode === HttpStatus.TOO_MANY_REQUESTS) {
+        return {
+          statusCode,
+          code: ErrorCode.RATE_LIMITED,
+          message: 'Too many requests',
         };
       }
 
@@ -88,6 +95,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return ErrorCode.FORBIDDEN;
       case HttpStatus.NOT_FOUND:
         return ErrorCode.NOT_FOUND;
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return ErrorCode.RATE_LIMITED;
       default:
         return statusCode >= 500
           ? ErrorCode.INTERNAL_SERVER_ERROR

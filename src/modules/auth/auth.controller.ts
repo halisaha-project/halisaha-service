@@ -10,6 +10,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
 import { PasswordResetCompleteDto } from './dto/password-reset-complete.dto';
+import { Throttle } from '@nestjs/throttler';
+import { AUTH_RATE_LIMITS } from '../../common/security/rate-limit.constants';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
@@ -17,6 +19,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: AUTH_RATE_LIMITS.register })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: HttpStatus.CREATED, type: UserResponseDto })
@@ -27,6 +30,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: AUTH_RATE_LIMITS.login })
   @ApiOperation({ summary: 'Log in with an email or username' })
   @ApiResponse({ status: HttpStatus.OK, type: TokenResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid login data' })
@@ -53,6 +57,7 @@ export class AuthController {
   }
 
   @Post('password-reset/request')
+  @Throttle({ default: AUTH_RATE_LIMITS.passwordResetRequest })
   @ApiOperation({ summary: 'Request a password reset' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Reset request accepted' })
   requestPasswordReset(
@@ -81,6 +86,7 @@ export class AuthController {
   }
 
   @Post('email-verification/resend')
+  @Throttle({ default: AUTH_RATE_LIMITS.emailVerificationResend })
   @ApiOperation({ summary: 'Request an email verification message' })
   @ApiResponse({
     status: HttpStatus.OK,

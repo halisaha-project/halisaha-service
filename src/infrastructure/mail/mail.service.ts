@@ -1,19 +1,25 @@
-import { Injectable } from '@nestjs/common';
+export interface EmailVerificationMessage {
+  recipientEmail: string;
+  token: string;
+}
 
-@Injectable()
-export class MailService {
-  sendEmailVerification(...message: [string, string]): Promise<void> {
-    void message;
-    return Promise.resolve();
-  }
+export interface PasswordResetMessage {
+  recipientEmail: string;
+  token: string;
+}
 
-  sendPasswordReset(...message: [string, string]): Promise<void> {
-    void message;
-    return Promise.resolve();
-  }
+export interface GroupInvitationMessage {
+  recipientEmail: string;
+  groupName: string;
+  token: string;
+}
 
-  sendGroupInvitation(...message: [string, string]): Promise<void> {
-    void message;
-    return Promise.resolve();
-  }
+export abstract class MailService {
+  abstract sendEmailVerification(
+    message: EmailVerificationMessage,
+  ): Promise<void>;
+
+  abstract sendPasswordReset(message: PasswordResetMessage): Promise<void>;
+
+  abstract sendGroupInvitation(message: GroupInvitationMessage): Promise<void>;
 }

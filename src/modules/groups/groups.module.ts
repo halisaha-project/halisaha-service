@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
-import { MailService } from '../../infrastructure/mail/mail.service';
 import { GroupsController } from './groups.controller';
 import { GroupsService } from './groups.service';
 import { Group, GroupSchema } from './schemas/group.schema';
@@ -21,7 +20,7 @@ import {
     ]),
   ],
   controllers: [GroupsController],
-  providers: [GroupsService, MailService],
+  providers: [GroupsService],
   exports: [GroupsService],
 })
 export class GroupsModule {}

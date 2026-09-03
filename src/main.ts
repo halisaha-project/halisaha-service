@@ -1,12 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { configureApplication } from './bootstrap';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const configService = app.get(ConfigService);
 
-  configureApplication(app);
+  configureApplication(app, {
+    corsOrigins: configService.getOrThrow<string[]>('corsOrigins'),
+    trustProxy: configService.getOrThrow<boolean>('trustProxy'),
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Halisaha API')
@@ -20,7 +25,7 @@ async function bootstrap(): Promise<void> {
     SwaggerModule.createDocument(app, swaggerConfig),
   );
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(configService.getOrThrow<number>('port'));
 }
 
 void bootstrap();
