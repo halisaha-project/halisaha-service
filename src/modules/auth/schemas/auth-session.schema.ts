@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type AuthSessionDocument = HydratedDocument<AuthSession>;
 
 @Schema({ timestamps: true, collection: 'auth_sessions' })
 export class AuthSession {
-  @Prop({ required: true, index: true, type: Types.ObjectId })
+  @Prop({ required: true, index: true, type: MongooseSchema.Types.ObjectId })
   userId!: Types.ObjectId;
 
   @Prop({ required: true, unique: true, index: true })

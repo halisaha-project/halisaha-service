@@ -13,7 +13,7 @@ Use feature-oriented modules. Auth and Users remain separate; Auth owns OTP, ema
 
 ## Current implementation
 
-Foundation is implemented: configuration and validation, global ValidationPipe, standardized exception filter, health endpoint, MongoDB infrastructure, and `MongoIdPipe`.
+Foundation is implemented: configuration and validation, global ValidationPipe, standardized exception filter, health endpoint, MongoDB infrastructure, and `MongoIdPipe`. Shutdown hooks handle `SIGTERM`/`SIGINT` so Nest and Mongoose lifecycle cleanup can run.
 
 Positions are implemented with canonical reference positions `GK`, `DEF`, `MID`, and `FWD`; read endpoints and seed infrastructure exist, with no public write endpoints.
 
@@ -28,7 +28,7 @@ Auth is implemented:
 - Email verification: hashed high-entropy one-time tokens, 24-hour expiry, atomic consumption, anti-enumeration resend, and mockable/no-op mail delivery.
 - Password reset: anti-enumeration request, hashed one-time tokens, atomic consumption, bcrypt password replacement, active refresh-session revocation, and concurrent single-use protection. Token consumption, password update, and session revocation are separate operations; do not add transactions casually.
 
-Transactional mail is implemented behind the shared `MailService` abstraction. Auth and Groups pass typed verification, password-reset, and group-invitation messages to that abstraction and do not depend on Resend. `MailModule` selects `ResendMailService` only in production; development and tests use `NoopMailService` and never make mail network calls. Templates are plain HTML kept separate from transport code. Resend delivery is currently best-effort: failures produce only a generic server log and do not change public registration, password-reset, or invitation responses.
+Transactional mail is implemented behind the shared `MailService` abstraction. Auth and Groups pass typed verification, password-reset, and group-invitation messages to that abstraction and do not depend on Resend. `MailModule` selects `ResendMailService` only in production; development and tests use `NoopMailService` and never make mail network calls. No development token-capture endpoint exists. Templates are plain HTML kept separate from transport code. Resend delivery is currently best-effort: failures produce only a generic server log and do not change public registration, password-reset, or invitation responses.
 
 HTTP hardening is implemented in the shared bootstrap path for the Express adapter. Helmet is enabled globally with CSP disabled for this API-only service, Express identification is disabled, and JSON/URL-encoded request bodies are limited to `1mb`. The existing global `ValidationPipe` remains configured with `whitelist`, `forbidNonWhitelisted`, and `transform` enabled, and validation errors retain the normalized application-error contract.
 
@@ -37,6 +37,10 @@ Groups and invitations are implemented with authenticated member/owner authoriza
 Matches are implemented with authenticated group scoping, draft/ready/completed/cancelled statuses, owner-only management, participant validation/deduplication (maximum 30), stale lineup clearing, deterministic sorted alternating home/away formation, and minimal owner-only `ready -> completed` transition. No position or skill balancing exists.
 
 Voting is implemented with authenticated match/group scoping, completed-match-only eligibility, participant checks, self-vote prevention, integer scores 1–5, compound unique index `(matchId, voterUserId, targetUserId)`, safe vote responses, match-scoped listing, and aggregate results. Voter identity always comes from JWT, never request input.
+
+All domain reference fields use `MongooseSchema.Types.ObjectId` at runtime, including ObjectId arrays; do not replace those declarations with `Types.ObjectId`, which registers as `Mixed` in this project. Normal Mongoose queries cast validated string IDs. Aggregation pipelines do not, so voting results explicitly convert their validated group/match IDs at the aggregation boundary.
+
+Manual Postman smoke testing has covered the main auth, groups/invitations, matches/team generation/completion, and voting flow. Smoke-test fixes include parameter-scoped `MongoIdPipe` usage, runtime ObjectId schema declarations, and completed-only validation for `MatchStatusDto`. The temporary development mail-capture API used during diagnosis has been removed.
 
 ## Configuration and security
 
@@ -71,7 +75,7 @@ npm run build
 git diff --check
 ```
 
-The unit suite covers the implemented domains and currently contains roughly 53 tests. Mocked HTTP contract tests exist but may fail in the Codex sandbox because binding localhost produces `listen EPERM`; do not change runtime behavior to work around that.
+The unit suite covers the implemented domains and currently contains 105 tests. Mocked HTTP contract tests contain 11 tests and may fail in the Codex sandbox because binding localhost produces `listen EPERM`; do not change runtime behavior to work around that. They pass when local binding is permitted.
 
 Real MongoDB integration tests use:
 
@@ -82,6 +86,10 @@ npm run test:integration -- --runInBand
 Integration Jest setup loads `.env`, requires only `MONGODB_TEST_URI`, refuses databases whose name is not clearly integration-only, does not bind HTTP ports, cleans collections deterministically between tests, and preserves indexes. The dedicated database is `halisaha_integration_test`; development database is `halisaha`. No `mongodb-memory-server` is used.
 
 Integration coverage includes schema indexes, unique vote enforcement, user normalization/serialization, match/team persistence, voting aggregation, atomic AuthSession claims, email-verification single-use behavior, password-reset behavior, and concurrent invitation acceptance. If Atlas SRV resolution fails with `querySrv ECONNREFUSED`, report the exact error; do not interpret it as a production defect without a successful database run.
+
+## Docker readiness
+
+The multi-stage Node 22 production image installs from `package-lock.json` with `npm ci`, builds TypeScript separately, and copies production dependencies plus compiled output into the runtime stage. It sets `NODE_ENV=production`, runs as the non-root `node` user, exposes port 3000 while honoring runtime `PORT`, and starts one Node process with `node dist/main.js`. The Node-based healthcheck calls `/api/v1/health` on localhost using runtime `PORT`; no curl/wget package is added. `.dockerignore` excludes dependencies, build/test artifacts, Git metadata, local logs, and `.env` files.
 
 ## Working rules
 
@@ -106,10 +114,12 @@ The Resend adapter is prepared, but real delivery cannot be considered productio
 6. Configure frontend/base URLs and replace token-only instructions with appropriate links.
 7. Perform a real end-to-end delivery test.
 
-## Next planned phase
+## Readiness and remaining work
 
-Core backend, integration-test architecture, the pre-domain Resend mail adapter, and baseline environment/HTTP security hardening are substantially complete. The next planned work is deployment readiness, Swagger/API review, and production-readiness cleanup. Do not activate real production mail until the sender domain steps above are complete.
+The backend and Docker image are ready for frontend integration, and the principal unit/integration/manual flows pass. Before production deployment, remediate or explicitly assess the current npm audit findings, finalize and verify the mail sender/domain, configure exact frontend origins, confirm whether `TRUST_PROXY` matches the real proxy topology, verify the `1mb` body limit, and replace in-memory throttling with shared storage if multiple replicas are introduced. Confirm Helmet, CORS, health checking, graceful shutdown, and rate limiting through the deployed proxy.
 
-Before production deployment, configure exact frontend origins, confirm whether `TRUST_PROXY` matches the real proxy topology, verify the `1mb` body limit is suitable, and replace in-memory throttling with shared storage if multiple replicas are introduced. Confirm Helmet behavior and rate limiting through the deployed proxy without exposing infrastructure details.
+The Postman collection's main requests remain useful, but some descriptions and negative-test expectations still mention the now-fixed method-level `MongoIdPipe` and `MatchStatusDto` issues. Refresh those assertions before treating the collection as an automated acceptance suite. Docker runtime output still includes TypeScript declarations, source maps, and build metadata from `dist`; these are non-secret but can be pruned in a later image-cleanliness pass.
+
+Known failure windows remain intentional: refresh rotation can require reauthentication if replacement creation fails after old-session revocation; password reset and invitation acceptance perform token claim and downstream updates as separate operations. Do not introduce transactions without reviewing those tradeoffs.
 
 Do not continue to new product domains or infrastructure/deployment work without an explicit request. Do not commit automatically.

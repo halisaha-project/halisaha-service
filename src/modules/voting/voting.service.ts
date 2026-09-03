@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ApplicationException } from '../../common/errors/application.exception';
 import { ErrorCode } from '../../common/errors/error-code';
 import { MatchesService } from '../matches/matches.service';
@@ -88,7 +88,12 @@ export class VotingService {
     return {
       results: await this.model
         .aggregate([
-          { $match: { groupId, matchId } },
+          {
+            $match: {
+              groupId: new Types.ObjectId(groupId),
+              matchId: new Types.ObjectId(matchId),
+            },
+          },
           {
             $group: {
               _id: '$targetUserId',

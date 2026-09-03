@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Schema as MongooseSchema, Types } from 'mongoose';
 
 @Schema({ timestamps: true, collection: 'email_verifications' })
 export class EmailVerification {
-  @Prop({ required: true, index: true, type: Types.ObjectId })
+  @Prop({ required: true, index: true, type: MongooseSchema.Types.ObjectId })
   userId!: Types.ObjectId;
   @Prop({ required: true, unique: true, index: true })
   tokenHash!: string;

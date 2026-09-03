@@ -9,6 +9,7 @@ import {
   IsMongoId,
   ArrayMaxSize,
   Equals,
+  IsOptional,
 } from 'class-validator';
 import { MatchStatus } from '../schemas/match.schema';
 export class CreateMatchDto {
@@ -22,11 +23,15 @@ export class CreateMatchDto {
 }
 export class UpdateMatchDto {
   @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name?: string;
-  @ApiProperty({ required: false }) @IsDateString() scheduledAt?: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
 }
 export class ParticipantsDto {
   @ApiProperty({ type: [String] })

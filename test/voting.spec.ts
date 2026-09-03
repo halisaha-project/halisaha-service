@@ -1,7 +1,7 @@
 import { VotingService } from '../src/modules/voting/voting.service';
 import { MatchesService } from '../src/modules/matches/matches.service';
 import { Vote } from '../src/modules/voting/schemas/vote.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 const participantMatch = {
   status: 'completed',
@@ -23,9 +23,16 @@ function make(
   const model = {
     create,
     find: jest.fn(),
-    aggregate: jest.fn(),
+    aggregate: jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue([]),
+    }),
   } as unknown as Model<Vote>;
-  return { service: new VotingService(model, matches), matches, create };
+  return {
+    service: new VotingService(model, matches),
+    matches,
+    create,
+    aggregate: model.aggregate as jest.Mock,
+  };
 }
 
 describe('VotingService', () => {
@@ -92,5 +99,20 @@ describe('VotingService', () => {
     ).rejects.toMatchObject({
       response: expect.objectContaining({ code: 'VOTE_ALREADY_EXISTS' }),
     });
+  });
+  it('matches ObjectIds in the voting-results aggregation', async () => {
+    const h = make();
+    const groupId = '507f1f77bcf86cd799439011';
+    const matchId = '507f1f77bcf86cd799439012';
+
+    await h.service.results(groupId, matchId, 'voter');
+
+    const pipeline = h.aggregate.mock.calls[0][0] as Array<{
+      $match?: { groupId: Types.ObjectId; matchId: Types.ObjectId };
+    }>;
+    expect(pipeline[0].$match?.groupId).toBeInstanceOf(Types.ObjectId);
+    expect(pipeline[0].$match?.groupId.toHexString()).toBe(groupId);
+    expect(pipeline[0].$match?.matchId).toBeInstanceOf(Types.ObjectId);
+    expect(pipeline[0].$match?.matchId.toHexString()).toBe(matchId);
   });
 });
