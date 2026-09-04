@@ -35,9 +35,10 @@ describe('Resend mail adapter', () => {
         recipientEmail: 'user@example.com',
         groupName: 'Sunday Team',
         token: 'invite-token',
+        code: '004821',
       },
       subject: 'Invitation to join Sunday Team',
-      content: 'invite-token',
+      content: '004821',
     },
   ])('sends the $method message through Resend', async (testCase) => {
     const send = jest

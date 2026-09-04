@@ -35,6 +35,7 @@ export class GroupsController {
     return this.groupsService.list(user.userId);
   }
   @Post('invitations/accept')
+  @Throttle({ default: AUTH_RATE_LIMITS.groupInvitationAccept })
   accept(
     @Body() dto: AcceptInvitationDto,
     @CurrentUser() user: AuthenticatedUser,

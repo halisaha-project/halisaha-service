@@ -11,6 +11,7 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "seed:positions": "npm run build && node dist/scripts/seed-positions.js",
+    "seed:mock-team": "npm run build && node dist/scripts/seed-mock-team.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",

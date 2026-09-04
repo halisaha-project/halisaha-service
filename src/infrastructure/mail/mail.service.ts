@@ -12,6 +12,7 @@ export interface GroupInvitationMessage {
   recipientEmail: string;
   groupName: string;
   token: string;
+  code: string;
 }
 
 export abstract class MailService {

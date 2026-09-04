@@ -23,7 +23,7 @@ describe('Positions endpoint (e2e)', () => {
           findAll: jest.fn().mockResolvedValue([
             {
               id: '1',
-              name: 'Goalkeeper',
+              name: 'Kaleci',
               abbreviation: 'GK',
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -31,7 +31,7 @@ describe('Positions endpoint (e2e)', () => {
           ]),
           findById: jest.fn().mockResolvedValue({
             id: '1',
-            name: 'Goalkeeper',
+            name: 'Kaleci',
             abbreviation: 'GK',
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -59,7 +59,7 @@ describe('Positions endpoint (e2e)', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.data[0]).toMatchObject({
-          name: 'Goalkeeper',
+          name: 'Kaleci',
           abbreviation: 'GK',
         });
       }));

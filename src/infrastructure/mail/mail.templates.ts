@@ -22,6 +22,10 @@ function tokenParagraph(token: string): string {
   return `<p><strong>Token:</strong> <code>${escapeHtml(token)}</code></p>`;
 }
 
+function codeParagraph(code: string): string {
+  return `<p><strong>Code:</strong> <code>${escapeHtml(code)}</code></p>`;
+}
+
 export function emailVerificationTemplate(
   appName: string,
   token: string,
@@ -44,11 +48,11 @@ export function passwordResetTemplate(appName: string, token: string): string {
 export function groupInvitationTemplate(
   appName: string,
   groupName: string,
-  token: string,
+  code: string,
 ): string {
   return layout(
     appName,
     'Group invitation',
-    `<p>You have been invited to join <strong>${escapeHtml(groupName)}</strong>.</p>${tokenParagraph(token)}<p>This invitation expires in 7 days.</p>`,
+    `<p>You have been invited to join <strong>${escapeHtml(groupName)}</strong>.</p><p>Use this invitation code:</p>${codeParagraph(code)}<p>This invitation expires in 7 days.</p>`,
   );
 }

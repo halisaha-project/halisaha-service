@@ -64,7 +64,7 @@ export class ResendMailService implements MailService {
       html: groupInvitationTemplate(
         this.appName,
         message.groupName,
-        message.token,
+        message.code,
       ),
     });
   }

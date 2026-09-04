@@ -84,7 +84,12 @@ describe('real domain persistence', () => {
     const matchId = (await matchModel
       .findOne({ groupId })
       .exec())!._id.toString();
-    await matches.generate(groupId, matchId, players[0]);
+    await matches.generate(
+      groupId,
+      matchId,
+      { formation: { GK: 0, DEF: 0, MID: 1, FWD: 0 } },
+      players[0],
+    );
     const saved = await matchModel.findById(matchId).exec();
     expect(
       [...saved!.homeTeamUserIds, ...saved!.awayTeamUserIds].map(String).sort(),

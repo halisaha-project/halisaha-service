@@ -37,6 +37,10 @@ describe('rate-limit metadata', () => {
       GroupsController.prototype.invite,
       AUTH_RATE_LIMITS.groupInvitation,
     );
+    expectRateLimit(
+      GroupsController.prototype.accept,
+      AUTH_RATE_LIMITS.groupInvitationAccept,
+    );
     expect(Reflect.getMetadata(skipMetadata, HealthController)).toBe(true);
   });
 });

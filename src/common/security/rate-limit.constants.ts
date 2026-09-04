@@ -6,4 +6,5 @@ export const AUTH_RATE_LIMITS = {
   passwordResetRequest: { limit: 5, ttl: 15 * 60_000 },
   emailVerificationResend: { limit: 5, ttl: 15 * 60_000 },
   groupInvitation: { limit: 10, ttl: 15 * 60_000 },
+  groupInvitationAccept: { limit: 5, ttl: 15 * 60_000 },
 } as const;

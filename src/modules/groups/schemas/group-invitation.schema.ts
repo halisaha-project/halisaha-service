@@ -10,9 +10,17 @@ export class GroupInvitation {
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId })
   invitedByUserId!: Types.ObjectId;
   @Prop({ required: true, unique: true, index: true }) tokenHash!: string;
+  @Prop({ required: true }) codeHash!: string;
   @Prop({ required: true, index: true }) expiresAt!: Date;
   @Prop({ type: Date, default: null }) acceptedAt!: Date | null;
   @Prop({ type: Date, default: null }) revokedAt!: Date | null;
 }
 export const GroupInvitationSchema =
   SchemaFactory.createForClass(GroupInvitation);
+GroupInvitationSchema.index(
+  { invitedUserId: 1, codeHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { codeHash: { $type: 'string' } },
+  },
+);

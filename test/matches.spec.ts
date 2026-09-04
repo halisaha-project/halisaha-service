@@ -21,6 +21,9 @@ const match = (participants: string[], status = MatchStatus.DRAFT) => ({
   participantUserIds: participants,
   homeTeamUserIds: [],
   awayTeamUserIds: [],
+  homeLineup: [],
+  awayLineup: [],
+  formation: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 });
@@ -41,6 +44,21 @@ function serviceFor(group = { ownerId: 'owner', memberIds: ids(30) }) {
   const groups = {
     assertOwner: jest.fn().mockResolvedValue(group),
     assertMember: jest.fn().mockResolvedValue(group),
+    findMembershipProfilesByUserIds: jest
+      .fn()
+      .mockImplementation(async (_groupId: string, userIds: string[]) =>
+        userIds.map((userId, index) => ({
+          userId,
+          mainPosition: index < 2 ? 'GK' : index % 2 ? 'DEF' : 'MID',
+          altPosition: index < 2 ? 'GK' : 'FWD',
+          shirtNumber: index + 1,
+        })),
+      ),
+    findSafeUserIdentitiesByIds: jest
+      .fn()
+      .mockImplementation(async (userIds: string[]) =>
+        userIds.map((id) => ({ id, name: `Name-${id}`, surname: 'Surname' })),
+      ),
   } as unknown as GroupsService;
   return {
     service: new MatchesService(model, groups),
@@ -134,6 +152,9 @@ describe('MatchesService', () => {
         participantUserIds: [],
         homeTeamUserIds: [],
         awayTeamUserIds: [],
+        homeLineup: [],
+        awayLineup: [],
+        formation: null,
       }),
     );
   });
@@ -172,17 +193,18 @@ describe('MatchesService', () => {
       h.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(match([...participants].reverse())),
       });
-      const home = participants.sort().filter((_, i) => i % 2 === 0);
-      const away = participants.sort().filter((_, i) => i % 2 === 1);
       h.findOneAndUpdate.mockReturnValue({
-        exec: jest.fn().mockImplementation(async () => ({
-          ...match(participants),
-          homeTeamUserIds: home,
-          awayTeamUserIds: away,
-          status: MatchStatus.READY,
-        })),
+        exec: jest.fn().mockImplementation(async () => {
+          const update = h.findOneAndUpdate.mock.calls[0][1];
+          return { ...match(participants), ...update };
+        }),
       });
-      const result = await h.service.generate('group', 'match', 'owner');
+      const result = await h.service.generate(
+        'group',
+        'match',
+        { formation: { GK: 0, DEF: 0, MID: count / 2, FWD: 0 } },
+        'owner',
+      );
       expect(result.homeTeamUserIds).toHaveLength(count / 2);
       expect(result.awayTeamUserIds).toHaveLength(count / 2);
       expect(
@@ -192,6 +214,7 @@ describe('MatchesService', () => {
         [...result.homeTeamUserIds, ...result.awayTeamUserIds].sort(),
       ).toEqual(participants.sort());
       expect(result.status).toBe(MatchStatus.READY);
+      expect(h.groups.findMembershipProfilesByUserIds).toHaveBeenCalledTimes(1);
     },
   );
 
@@ -208,7 +231,12 @@ describe('MatchesService', () => {
         exec: jest.fn().mockResolvedValue(match(players as string[], status)),
       });
       await expect(
-        h.service.generate('group', 'match', 'owner'),
+        h.service.generate(
+          'group',
+          'match',
+          { formation: { GK: 0, DEF: 0, MID: players.length / 2, FWD: 0 } },
+          'owner',
+        ),
       ).rejects.toMatchObject({
         response: expect.objectContaining({ code: 'INVALID_MATCH_STATE' }),
       });
@@ -232,6 +260,9 @@ describe('MatchesService', () => {
         participantUserIds: ['a', 'b'],
         homeTeamUserIds: [],
         awayTeamUserIds: [],
+        homeLineup: [],
+        awayLineup: [],
+        formation: null,
         status: MatchStatus.DRAFT,
       }),
       { new: true },
@@ -246,6 +277,159 @@ describe('MatchesService', () => {
     ).rejects.toMatchObject({
       response: expect.objectContaining({ code: 'INVALID_MATCH_STATE' }),
     });
+  });
+
+  it('fails safely when a participant membership profile is missing', async () => {
+    const h = serviceFor();
+    h.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(match(ids(2))),
+    });
+    h.groups.findMembershipProfilesByUserIds = jest.fn().mockResolvedValue([]);
+
+    await expect(
+      h.service.generate(
+        'group',
+        'match',
+        { formation: { GK: 1, DEF: 0, MID: 0, FWD: 0 } },
+        'owner',
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'MATCH_MEMBERSHIP_PROFILE_MISSING',
+      }),
+      clientMessage: 'Bazı oyuncuların grup üyelik bilgileri eksik.',
+    });
+    expect(h.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('persists lineup snapshots and returns bulk-enriched safe players', async () => {
+    const participants = ids(4);
+    const h = serviceFor();
+    h.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(match(participants)),
+    });
+    h.findOneAndUpdate.mockReturnValue({
+      exec: jest.fn().mockImplementation(async () => ({
+        ...match(participants),
+        ...h.findOneAndUpdate.mock.calls[0][1],
+      })),
+    });
+
+    const formation = { GK: 1, DEF: 1, MID: 0, FWD: 0 };
+    const result = await h.service.generate(
+      'group',
+      'match',
+      { formation },
+      'owner',
+    );
+    const update = h.findOneAndUpdate.mock.calls[0][1];
+    expect(update).toEqual(
+      expect.objectContaining({
+        homeTeamUserIds: expect.any(Array),
+        awayTeamUserIds: expect.any(Array),
+        homeLineup: expect.any(Array),
+        awayLineup: expect.any(Array),
+        formation,
+        status: MatchStatus.READY,
+      }),
+    );
+    expect(h.groups.findSafeUserIdentitiesByIds).toHaveBeenCalledTimes(1);
+    expect(result.homeTeam.players[0]).toEqual({
+      userId: expect.any(String),
+      name: expect.any(String),
+      surname: 'Surname',
+      shirtNumber: expect.any(Number),
+      assignedPosition: expect.stringMatching(/^(GK|DEF|MID|FWD)$/),
+    });
+    expect(result.homeTeam.players[0]).not.toHaveProperty('email');
+    expect(result.homeTeam.players[0]).not.toHaveProperty('passwordHash');
+    expect(result.formation).toEqual(formation);
+  });
+
+  it('returns persisted assigned positions from match detail with safe identities', async () => {
+    const h = serviceFor();
+    h.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        ...match(ids(2), MatchStatus.READY),
+        homeTeamUserIds: [ids(2)[0]],
+        awayTeamUserIds: [ids(2)[1]],
+        homeLineup: [
+          { userId: ids(2)[0], assignedPosition: 'FWD', shirtNumber: 9 },
+        ],
+        awayLineup: [
+          { userId: ids(2)[1], assignedPosition: 'GK', shirtNumber: 1 },
+        ],
+        formation: { GK: 1, DEF: 0, MID: 0, FWD: 0 },
+      }),
+    });
+
+    const result = await h.service.get('group', 'match', 'owner');
+
+    expect(result.homeTeam.players[0]).toEqual({
+      userId: ids(2)[0],
+      name: `Name-${ids(2)[0]}`,
+      surname: 'Surname',
+      assignedPosition: 'FWD',
+      shirtNumber: 9,
+    });
+    expect(h.groups.findMembershipProfilesByUserIds).not.toHaveBeenCalled();
+    expect(h.groups.findSafeUserIdentitiesByIds).toHaveBeenCalledTimes(1);
+    expect(result.formation).toEqual({ GK: 1, DEF: 0, MID: 0, FWD: 0 });
+  });
+
+  it('regeneration atomically replaces the previous formation and lineups', async () => {
+    const participants = ids(4);
+    const h = serviceFor();
+    h.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue({
+        ...match(participants, MatchStatus.READY),
+        formation: { GK: 1, DEF: 1, MID: 0, FWD: 0 },
+      }),
+    });
+    h.findOneAndUpdate.mockReturnValue({
+      exec: jest.fn().mockImplementation(async () => ({
+        ...match(participants),
+        ...h.findOneAndUpdate.mock.calls[0][1],
+      })),
+    });
+    const replacement = { GK: 0, DEF: 0, MID: 1, FWD: 1 };
+
+    const result = await h.service.generate(
+      'group',
+      'match',
+      { formation: replacement },
+      'owner',
+    );
+
+    expect(h.findOneAndUpdate.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        formation: replacement,
+        homeLineup: expect.any(Array),
+        awayLineup: expect.any(Array),
+        status: MatchStatus.READY,
+      }),
+    );
+    expect(result.formation).toEqual(replacement);
+  });
+
+  it('rejects an invalid formation total without replacing generated state', async () => {
+    const h = serviceFor();
+    h.findOne.mockReturnValue({
+      exec: jest.fn().mockResolvedValue(match(ids(14), MatchStatus.READY)),
+    });
+
+    await expect(
+      h.service.generate(
+        'group',
+        'match',
+        { formation: { GK: 1, DEF: 2, MID: 2, FWD: 1 } },
+        'owner',
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'INVALID_MATCH_FORMATION' }),
+      clientMessage: 'Diziliş toplamı takım oyuncu sayısıyla eşleşmelidir.',
+    });
+    expect(h.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('rejects non-owner operations through group authorization', async () => {

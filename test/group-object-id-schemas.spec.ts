@@ -2,6 +2,14 @@ import { GroupInvitationSchema } from '../src/modules/groups/schemas/group-invit
 import { GroupSchema } from '../src/modules/groups/schemas/group.schema';
 
 describe('Groups ObjectId schema paths', () => {
+  it('defines a collision-safe hashed invitation-code index', () => {
+    expect(GroupInvitationSchema.path('codeHash').options.required).toBe(true);
+    expect(GroupInvitationSchema.indexes()).toContainEqual([
+      { invitedUserId: 1, codeHash: 1 },
+      expect.objectContaining({ unique: true }),
+    ]);
+  });
+
   it.each(['groupId', 'invitedUserId', 'invitedByUserId'])(
     'registers GroupInvitation.%s as an ObjectId path',
     (path) => {

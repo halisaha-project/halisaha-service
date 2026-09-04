@@ -38,4 +38,26 @@ describe('ObjectId schema paths', () => {
       Types.ObjectId,
     );
   });
+
+  it.each(['homeLineup', 'awayLineup'] as const)(
+    'registers Match.%s.userId as an ObjectId subdocument field',
+    (path) => {
+      const lineupPath = MatchSchema.path(path);
+      expect(lineupPath.schema).toBeDefined();
+      const userIdPath = lineupPath.schema!.path('userId');
+
+      expect(userIdPath.instance).toBe('ObjectId');
+      expect(userIdPath.cast('507f1f77bcf86cd799439011')).toBeInstanceOf(
+        Types.ObjectId,
+      );
+    },
+  );
+
+  it('registers Match.formation as an embedded numeric structure', () => {
+    const formationPath = MatchSchema.path('formation');
+    expect(formationPath.schema).toBeDefined();
+    for (const position of ['GK', 'DEF', 'MID', 'FWD']) {
+      expect(formationPath.schema!.path(position).instance).toBe('Number');
+    }
+  });
 });

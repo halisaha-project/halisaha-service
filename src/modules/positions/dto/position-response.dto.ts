@@ -4,7 +4,7 @@ export class PositionResponseDto {
   @ApiProperty({ example: '6658a63e957fdc8261e8912a' })
   id!: string;
 
-  @ApiProperty({ example: 'Goalkeeper' })
+  @ApiProperty({ example: 'Kaleci' })
   name!: string;
 
   @ApiProperty({ example: 'GK' })

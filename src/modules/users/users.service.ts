@@ -6,6 +6,12 @@ import { ErrorCode } from '../../common/errors/error-code';
 import { CreateUserData } from './dto/create-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 
+export interface SafeUserIdentity {
+  id: string;
+  name: string;
+  surname: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -14,6 +20,20 @@ export class UsersService {
 
   findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
+  }
+
+  async findSafeIdentitiesByIds(ids: string[]): Promise<SafeUserIdentity[]> {
+    if (ids.length === 0) return [];
+    const users = await this.userModel
+      .find({ _id: { $in: ids } })
+      .select({ name: 1, surname: 1 })
+      .lean()
+      .exec();
+    return users.map((user) => ({
+      id: String(user._id),
+      name: user.name,
+      surname: user.surname,
+    }));
   }
 
   async findRequiredById(id: string): Promise<UserDocument> {

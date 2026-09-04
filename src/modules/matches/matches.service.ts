@@ -6,17 +6,24 @@ import { ApplicationException } from '../../common/errors/application.exception'
 import { ErrorCode } from '../../common/errors/error-code';
 import {
   CreateMatchDto,
+  GenerateTeamsDto,
   MatchResponseDto,
   ParticipantsDto,
   UpdateMatchDto,
 } from './dto/match.dto';
 import { Match, MatchStatus } from './schemas/match.schema';
+import {
+  FootballPosition,
+  GeneratedLineupPlayer,
+  TeamGeneratorService,
+} from './team-generator.service';
 
 @Injectable()
 export class MatchesService {
   constructor(
     @InjectModel(Match.name) private readonly model: Model<Match>,
     private readonly groups: GroupsService,
+    private readonly teamGenerator: TeamGeneratorService = new TeamGeneratorService(),
   ) {}
 
   async findRequiredForVoting(
@@ -74,22 +81,26 @@ export class MatchesService {
         participantUserIds: [],
         homeTeamUserIds: [],
         awayTeamUserIds: [],
+        homeLineup: [],
+        awayLineup: [],
+        formation: null,
       }),
     );
   }
   async list(groupId: string, userId: string) {
     await this.groups.assertMember(groupId, userId);
-    return (
-      await this.model.find({ groupId }).sort({ scheduledAt: 1, _id: 1 }).exec()
-    ).map((m) => this.safe(m));
+    const matches = await this.model
+      .find({ groupId })
+      .sort({ scheduledAt: 1, _id: 1 })
+      .exec();
+    return Promise.all(matches.map((match) => this.safe(match)));
   }
   async listForUser(userId: string) {
-    return (
-      await this.model
-        .find({ participantUserIds: userId })
-        .sort({ scheduledAt: 1, _id: 1 })
-        .exec()
-    ).map((m) => this.safe(m));
+    const matches = await this.model
+      .find({ participantUserIds: userId })
+      .sort({ scheduledAt: 1, _id: 1 })
+      .exec();
+    return Promise.all(matches.map((match) => this.safe(match)));
   }
   async get(groupId: string, matchId: string, userId: string) {
     await this.groups.assertMember(groupId, userId);
@@ -165,6 +176,9 @@ export class MatchesService {
           participantUserIds: ids,
           homeTeamUserIds: [],
           awayTeamUserIds: [],
+          homeLineup: [],
+          awayLineup: [],
+          formation: null,
           status: MatchStatus.DRAFT,
         },
         { new: true },
@@ -178,7 +192,12 @@ export class MatchesService {
       );
     return this.safe(m);
   }
-  async generate(groupId: string, matchId: string, userId: string) {
+  async generate(
+    groupId: string,
+    matchId: string,
+    dto: GenerateTeamsDto,
+    userId: string,
+  ) {
     await this.groups.assertOwner(groupId, userId);
     const current = await this.model.findOne({ _id: matchId, groupId }).exec();
     if (!current)
@@ -198,19 +217,64 @@ export class MatchesService {
         ErrorCode.INVALID_MATCH_STATE,
         'Invalid match state',
       );
-    const sorted = current.participantUserIds.map(String).sort();
-    const home = sorted.filter((_, i) => i % 2 === 0);
-    const away = sorted.filter((_, i) => i % 2 === 1);
+    const formationSize = Object.values(dto.formation).reduce(
+      (total, count) => total + count,
+      0,
+    );
+    if (formationSize !== current.participantUserIds.length / 2) {
+      throw new ApplicationException(
+        400,
+        ErrorCode.INVALID_MATCH_FORMATION,
+        'Formation size must equal team size',
+        undefined,
+        'Diziliş toplamı takım oyuncu sayısıyla eşleşmelidir.',
+      );
+    }
+    const participantIds = current.participantUserIds.map(String);
+    const memberships = await this.groups.findMembershipProfilesByUserIds(
+      groupId,
+      participantIds,
+    );
+    const membershipsByUserId = new Map(
+      memberships.map((membership) => [membership.userId, membership]),
+    );
+    if (participantIds.some((id) => !membershipsByUserId.has(id))) {
+      throw new ApplicationException(
+        409,
+        ErrorCode.MATCH_MEMBERSHIP_PROFILE_MISSING,
+        'Match participant membership profile is missing',
+        undefined,
+        'Bazı oyuncuların grup üyelik bilgileri eksik.',
+      );
+    }
+    const generated = this.teamGenerator.generate(
+      participantIds.map((id) => {
+        const membership = membershipsByUserId.get(id)!;
+        return {
+          userId: id,
+          mainPosition: membership.mainPosition as FootballPosition,
+          altPosition: membership.altPosition as FootballPosition,
+          shirtNumber: membership.shirtNumber,
+        };
+      }),
+      dto.formation,
+    );
+    const home = generated.home.map((player) => player.userId);
+    const away = generated.away.map((player) => player.userId);
     const updated = await this.model
       .findOneAndUpdate(
         {
           _id: matchId,
           groupId,
+          participantUserIds: current.participantUserIds,
           status: { $nin: [MatchStatus.CANCELLED, MatchStatus.COMPLETED] },
         },
         {
           homeTeamUserIds: home,
           awayTeamUserIds: away,
+          homeLineup: generated.home,
+          awayLineup: generated.away,
+          formation: dto.formation,
           status: MatchStatus.READY,
         },
         { new: true },
@@ -224,8 +288,28 @@ export class MatchesService {
       );
     return this.safe(updated);
   }
-  private safe(m: Match): MatchResponseDto {
+  private async safe(m: Match): Promise<MatchResponseDto> {
     const v = m as Match & { _id: unknown; createdAt: Date; updatedAt: Date };
+    const homeLineup = this.safeLineup(v.homeLineup ?? []);
+    const awayLineup = this.safeLineup(v.awayLineup ?? []);
+    const lineupIds = [...homeLineup, ...awayLineup].map(
+      (player) => player.userId,
+    );
+    const identities =
+      lineupIds.length === 0
+        ? []
+        : await this.groups.findSafeUserIdentitiesByIds(lineupIds);
+    const identitiesById = new Map(identities.map((user) => [user.id, user]));
+    const enrich = (players: GeneratedLineupPlayer[]) =>
+      players.map((player) => {
+        const identity = identitiesById.get(player.userId);
+        return {
+          ...player,
+          ...(identity
+            ? { name: identity.name, surname: identity.surname }
+            : {}),
+        };
+      });
     return {
       id: String(v._id),
       groupId: String(v.groupId),
@@ -236,8 +320,28 @@ export class MatchesService {
       participantUserIds: v.participantUserIds.map(String),
       homeTeamUserIds: v.homeTeamUserIds.map(String),
       awayTeamUserIds: v.awayTeamUserIds.map(String),
+      formation: v.formation
+        ? {
+            GK: v.formation.GK,
+            DEF: v.formation.DEF,
+            MID: v.formation.MID,
+            FWD: v.formation.FWD,
+          }
+        : null,
+      homeLineup,
+      awayLineup,
+      homeTeam: { players: enrich(homeLineup) },
+      awayTeam: { players: enrich(awayLineup) },
       createdAt: v.createdAt,
       updatedAt: v.updatedAt,
     };
+  }
+
+  private safeLineup(lineup: Match['homeLineup']): GeneratedLineupPlayer[] {
+    return lineup.map((player) => ({
+      userId: String(player.userId),
+      assignedPosition: player.assignedPosition,
+      shirtNumber: player.shirtNumber,
+    }));
   }
 }

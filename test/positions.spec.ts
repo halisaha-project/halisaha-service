@@ -1,7 +1,19 @@
 import { PositionSchema } from '../src/modules/positions/schemas/position.schema';
-import { PositionsService } from '../src/modules/positions/positions.service';
+import {
+  CANONICAL_POSITIONS,
+  PositionsService,
+} from '../src/modules/positions/positions.service';
 
 describe('Positions domain', () => {
+  it('defines canonical positions with Turkish labels in football order', () => {
+    expect(CANONICAL_POSITIONS).toEqual([
+      { name: 'Kaleci', abbreviation: 'GK' },
+      { name: 'Defans', abbreviation: 'DEF' },
+      { name: 'Orta Saha', abbreviation: 'MID' },
+      { name: 'Forvet', abbreviation: 'FWD' },
+    ]);
+  });
+
   it('defines unique indexes for name and abbreviation', () => {
     const indexes = PositionSchema.indexes();
     expect(indexes).toEqual(
@@ -13,20 +25,28 @@ describe('Positions domain', () => {
   });
 
   it('lists and retrieves positions through the service', async () => {
-    const positions = [{ id: '1', abbreviation: 'GK' }];
+    const positions = [
+      { id: '2', abbreviation: 'DEF' },
+      { id: '4', abbreviation: 'FWD' },
+      { id: '1', abbreviation: 'GK' },
+      { id: '3', abbreviation: 'MID' },
+    ];
     const model = {
       find: jest.fn().mockReturnValue({
-        sort: jest
-          .fn()
-          .mockReturnValue({ exec: jest.fn().mockResolvedValue(positions) }),
+        exec: jest.fn().mockResolvedValue(positions),
       }),
-      findById: jest
-        .fn()
-        .mockReturnValue({ exec: jest.fn().mockResolvedValue(positions[0]) }),
+      findById: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(positions[0]),
+      }),
     };
     const service = new PositionsService(model as never);
 
-    await expect(service.findAll()).resolves.toEqual(positions);
+    await expect(service.findAll()).resolves.toEqual([
+      positions[2],
+      positions[0],
+      positions[3],
+      positions[1],
+    ]);
     await expect(service.findById('1')).resolves.toEqual(positions[0]);
   });
 
@@ -57,6 +77,12 @@ describe('Positions domain', () => {
 
     expect(updateOne).toHaveBeenCalledTimes(8);
     expect(updateOne.mock.calls[0][0]).toEqual({ abbreviation: 'GK' });
+    expect(updateOne.mock.calls[0][1]).toEqual({
+      $set: { name: 'Kaleci', abbreviation: 'GK' },
+    });
     expect(updateOne.mock.calls[0][2]).toEqual({ upsert: true });
+    expect(updateOne.mock.calls.every(([, update]) => '$set' in update)).toBe(
+      true,
+    );
   });
 });

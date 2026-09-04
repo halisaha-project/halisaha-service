@@ -19,6 +19,7 @@ import {
   ParticipantsDto,
   UpdateMatchDto,
   MatchStatusDto,
+  GenerateTeamsDto,
 } from './dto/match.dto';
 import { MatchesService } from './matches.service';
 @ApiTags('matches')
@@ -89,9 +90,10 @@ export class MatchesController {
   generate(
     @Param('groupId', MongoIdPipe) g: string,
     @Param('matchId', MongoIdPipe) m: string,
+    @Body() d: GenerateTeamsDto,
     @CurrentUser() u: AuthenticatedUser,
   ) {
-    return this.service.generate(g, m, u.userId);
+    return this.service.generate(g, m, d, u.userId);
   }
 }
 

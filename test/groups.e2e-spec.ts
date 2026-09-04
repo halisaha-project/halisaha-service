@@ -52,10 +52,20 @@ describe('Groups MongoIdPipe routing (e2e)', () => {
   it('validates only groupId and leaves CurrentUser and bodies untouched', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/groups')
-      .send({ groupName: 'Cuma Tayfa' })
+      .send({
+        groupName: 'Cuma Tayfa',
+        mainPosition: 'DEF',
+        altPosition: 'MID',
+        shirtNumber: 11,
+      })
       .expect(201);
     expect(service.create).toHaveBeenCalledWith(
-      { groupName: 'Cuma Tayfa' },
+      {
+        groupName: 'Cuma Tayfa',
+        mainPosition: 'DEF',
+        altPosition: 'MID',
+        shirtNumber: 11,
+      },
       'owner-id',
     );
 

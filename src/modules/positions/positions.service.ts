@@ -5,12 +5,21 @@ import { ApplicationException } from '../../common/errors/application.exception'
 import { ErrorCode } from '../../common/errors/error-code';
 import { Position, PositionDocument } from './schemas/position.schema';
 
+export const POSITION_ABBREVIATIONS = ['GK', 'DEF', 'MID', 'FWD'] as const;
+
 export const CANONICAL_POSITIONS = [
-  { name: 'Goalkeeper', abbreviation: 'GK' },
-  { name: 'Defender', abbreviation: 'DEF' },
-  { name: 'Midfielder', abbreviation: 'MID' },
-  { name: 'Forward', abbreviation: 'FWD' },
+  { name: 'Kaleci', abbreviation: 'GK' },
+  { name: 'Defans', abbreviation: 'DEF' },
+  { name: 'Orta Saha', abbreviation: 'MID' },
+  { name: 'Forvet', abbreviation: 'FWD' },
 ] as const;
+
+const POSITION_ORDER: Record<string, number> = {
+  GK: 0,
+  DEF: 1,
+  MID: 2,
+  FWD: 3,
+};
 
 @Injectable()
 export class PositionsService {
@@ -18,8 +27,13 @@ export class PositionsService {
     @InjectModel(Position.name) private readonly positionModel: Model<Position>,
   ) {}
 
-  findAll(): Promise<PositionDocument[]> {
-    return this.positionModel.find().sort({ abbreviation: 1 }).exec();
+  async findAll(): Promise<PositionDocument[]> {
+    const positions = await this.positionModel.find().exec();
+    return [...positions].sort(
+      (left, right) =>
+        (POSITION_ORDER[left.abbreviation] ?? Number.MAX_SAFE_INTEGER) -
+        (POSITION_ORDER[right.abbreviation] ?? Number.MAX_SAFE_INTEGER),
+    );
   }
 
   async findById(id: string): Promise<PositionDocument> {
@@ -39,7 +53,7 @@ export class PositionsService {
       await this.positionModel
         .updateOne(
           { abbreviation: position.abbreviation },
-          { $setOnInsert: position },
+          { $set: position },
           { upsert: true },
         )
         .exec();

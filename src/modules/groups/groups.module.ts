@@ -9,6 +9,10 @@ import {
   GroupInvitation,
   GroupInvitationSchema,
 } from './schemas/group-invitation.schema';
+import {
+  GroupMembership,
+  GroupMembershipSchema,
+} from './schemas/group-membership.schema';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import {
     MongooseModule.forFeature([
       { name: Group.name, schema: GroupSchema },
       { name: GroupInvitation.name, schema: GroupInvitationSchema },
+      { name: GroupMembership.name, schema: GroupMembershipSchema },
     ]),
   ],
   controllers: [GroupsController],
