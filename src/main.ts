@@ -8,6 +8,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   const configService = app.get(ConfigService);
 
+  app.enableCors();
   configureApplication(app, {
     corsOrigins: configService.getOrThrow<string[]>('corsOrigins'),
     trustProxy: configService.getOrThrow<boolean>('trustProxy'),

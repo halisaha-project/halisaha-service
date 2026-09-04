@@ -6,13 +6,20 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { ErrorCode } from '../errors/error-code';
+import { Request, Response } from 'express';
+import { ApplicationException } from '../errors/application.exception';
+import {
+  ClientMessage,
+  clientMessageForErrorType,
+} from '../errors/client-message';
+import { ErrorType, errorTypeForStatus } from '../errors/error-type';
+import { ApiErrorResponse } from '../interfaces/api-response.interface';
 
-interface ErrorPayload {
+interface NormalizedError {
   statusCode: number;
-  code: ErrorCode;
   message: string;
-  details?: unknown;
+  type: ErrorType;
+  clientMessage: string;
 }
 
 @Catch()
@@ -20,87 +27,67 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const response = host.switchToHttp().getResponse();
-    const request = host
-      .switchToHttp()
-      .getRequest<{ url: string; method: string }>();
-    const payload = this.toPayload(exception, request);
+    const http = host.switchToHttp();
+    const response = http.getResponse<Response>();
+    const request = http.getRequest<Request>();
+    const normalized = this.normalize(exception);
+    const payload: ApiErrorResponse = {
+      statusCode: normalized.statusCode,
+      success: false,
+      timestamp: new Date().toISOString(),
+      path: request.originalUrl,
+      data: null,
+      error: {
+        message: normalized.message,
+        type: normalized.type,
+        clientMessage: normalized.clientMessage,
+      },
+    };
 
     if (!(exception instanceof HttpException)) {
       this.logger.error('Unhandled application error');
     }
 
-    response.status(payload.statusCode).json(payload);
+    response.status(normalized.statusCode).json(payload);
   }
 
-  private toPayload(
-    exception: unknown,
-    request: { url: string; method: string },
-  ): ErrorPayload {
+  private normalize(exception: unknown): NormalizedError {
+    if (exception instanceof ApplicationException) {
+      return {
+        statusCode: exception.getStatus(),
+        message: exception.message,
+        type: exception.type,
+        clientMessage: exception.clientMessage,
+      };
+    }
+
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
-      const body = exception.getResponse();
-
-      if (this.isErrorPayload(body)) return body;
-      if (statusCode === HttpStatus.NOT_FOUND) {
-        return {
-          statusCode,
-          code: ErrorCode.NOT_FOUND,
-          message: `Cannot ${request.method} ${request.url}`,
-        };
-      }
-      if (statusCode === HttpStatus.TOO_MANY_REQUESTS) {
-        return {
-          statusCode,
-          code: ErrorCode.RATE_LIMITED,
-          message: 'Too many requests',
-        };
-      }
-
-      const message = typeof body === 'string' ? body : this.httpMessage(body);
-      return { statusCode, code: this.codeForStatus(statusCode), message };
+      const type = errorTypeForStatus(statusCode);
+      return {
+        statusCode,
+        message:
+          statusCode === HttpStatus.TOO_MANY_REQUESTS
+            ? 'Too many requests'
+            : this.httpMessage(exception.getResponse()),
+        type,
+        clientMessage: clientMessageForErrorType(type),
+      };
     }
 
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      code: ErrorCode.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
+      type: ErrorType.InternalServerError,
+      clientMessage: ClientMessage.InternalServerError,
     };
   }
 
-  private isErrorPayload(value: unknown): value is ErrorPayload {
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      'statusCode' in value &&
-      'code' in value &&
-      'message' in value
-    );
-  }
-
-  private httpMessage(value: object): string {
+  private httpMessage(value: string | object): string {
+    if (typeof value === 'string') return value;
     const message = (value as { message?: string | string[] }).message;
     return Array.isArray(message)
       ? message.join(', ')
       : (message ?? 'Request failed');
-  }
-
-  private codeForStatus(statusCode: number): ErrorCode {
-    switch (statusCode) {
-      case HttpStatus.BAD_REQUEST:
-        return ErrorCode.BAD_REQUEST;
-      case HttpStatus.UNAUTHORIZED:
-        return ErrorCode.UNAUTHORIZED;
-      case HttpStatus.FORBIDDEN:
-        return ErrorCode.FORBIDDEN;
-      case HttpStatus.NOT_FOUND:
-        return ErrorCode.NOT_FOUND;
-      case HttpStatus.TOO_MANY_REQUESTS:
-        return ErrorCode.RATE_LIMITED;
-      default:
-        return statusCode >= 500
-          ? ErrorCode.INTERNAL_SERVER_ERROR
-          : ErrorCode.BAD_REQUEST;
-    }
   }
 }

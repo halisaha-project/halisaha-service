@@ -9,8 +9,9 @@ import type { Express } from 'express';
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { ErrorCode } from './common/errors/error-code';
+import { ErrorType } from './common/errors/error-type';
 import { ApplicationException } from './common/errors/application.exception';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { translateValidationErrors } from './common/validation/validation-error-translator';
 
 export interface HttpSecurityOptions {
   corsOrigins: string[];
@@ -20,16 +21,19 @@ export interface HttpSecurityOptions {
 export function validationExceptionFactory(
   errors: ValidationError[],
 ): ApplicationException {
-  return new ApplicationException(
-    400,
-    ErrorCode.VALIDATION_ERROR,
-    'Validation failed',
-    errors.map(({ property, constraints, children }) => ({
+  const translated = translateValidationErrors(errors);
+  return new ApplicationException({
+    statusCode: 400,
+    code: ErrorCode.VALIDATION_ERROR,
+    message: translated.message,
+    type: ErrorType.BadRequest,
+    clientMessage: translated.clientMessage,
+    details: errors.map(({ property, constraints, children }) => ({
       property,
       constraints: constraints ?? {},
       ...(children?.length ? { children } : {}),
     })),
-  );
+  });
 }
 
 export function configureApplication(
@@ -59,5 +63,4 @@ export function configureApplication(
       exceptionFactory: validationExceptionFactory,
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
 }

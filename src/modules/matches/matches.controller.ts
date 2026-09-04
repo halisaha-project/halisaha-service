@@ -94,3 +94,14 @@ export class MatchesController {
     return this.service.generate(g, m, u.userId);
   }
 }
+
+@UseGuards(JwtAuthGuard)
+@Controller({ path: 'matches', version: '1' })
+export class MatchesMeController {
+  constructor(private readonly service: MatchesService) {}
+
+  @Get('me')
+  listMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.service.listForUser(user.userId);
+  }
+}

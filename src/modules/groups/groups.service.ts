@@ -6,7 +6,11 @@ import { ApplicationException } from '../../common/errors/application.exception'
 import { ErrorCode } from '../../common/errors/error-code';
 import { MailService } from '../../infrastructure/mail/mail.service';
 import { UsersService } from '../users/users.service';
-import { GroupNameDto, GroupResponseDto } from './dto/group.dto';
+import {
+  CreateGroupDto,
+  GroupNameDto,
+  GroupResponseDto,
+} from './dto/group.dto';
 import { AcceptInvitationDto, InviteUserDto } from './dto/invitation.dto';
 import { Group } from './schemas/group.schema';
 import { GroupInvitation } from './schemas/group-invitation.schema';
@@ -21,9 +25,9 @@ export class GroupsService {
     private readonly mailService: MailService,
   ) {}
 
-  async create(dto: GroupNameDto, userId: string): Promise<GroupResponseDto> {
+  async create(dto: CreateGroupDto, userId: string): Promise<GroupResponseDto> {
     const group = await this.groupModel.create({
-      name: dto.name.trim(),
+      name: dto.groupName.trim(),
       ownerId: userId,
       memberIds: [userId],
     });

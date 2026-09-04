@@ -4,8 +4,11 @@ import {
   HttpStatus,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ClientMessage } from '../src/common/errors/client-message';
 import { ErrorCode } from '../src/common/errors/error-code';
+import { ErrorType } from '../src/common/errors/error-type';
 import { ApplicationException } from '../src/common/errors/application.exception';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { validationExceptionFactory } from '../src/bootstrap';
@@ -14,7 +17,7 @@ function hostFor(response: { status: jest.Mock; json: jest.Mock }) {
   return {
     switchToHttp: () => ({
       getResponse: () => response,
-      getRequest: () => ({ method: 'GET', url: '/api/v1/unknown' }),
+      getRequest: () => ({ originalUrl: '/api/v1/unknown' }),
     }),
   } as never;
 }
@@ -23,14 +26,29 @@ describe('HTTP error contract', () => {
   it('normalizes application exceptions', () => {
     const response = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     new HttpExceptionFilter().catch(
-      new ApplicationException(403, ErrorCode.FORBIDDEN, 'Forbidden'),
+      new ApplicationException({
+        statusCode: 403,
+        code: ErrorCode.FORBIDDEN,
+        message: 'Forbidden',
+        type: ErrorType.Forbidden,
+        clientMessage: 'Bu işlem için yetkiniz yok.',
+      }),
       hostFor(response),
     );
-    expect(response.json).toHaveBeenCalledWith({
+    const payload = response.json.mock.calls[0][0];
+    expect(payload).toEqual({
       statusCode: 403,
-      code: 'FORBIDDEN',
-      message: 'Forbidden',
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'Forbidden',
+        type: 'FORBIDDEN',
+        clientMessage: 'Bu işlem için yetkiniz yok.',
+      },
     });
+    expect(new Date(payload.timestamp).toISOString()).toBe(payload.timestamp);
   });
 
   it('normalizes validation details', () => {
@@ -44,7 +62,7 @@ describe('HTTP error contract', () => {
     expect(exception.getResponse()).toEqual({
       statusCode: 400,
       code: 'VALIDATION_ERROR',
-      message: 'Validation failed',
+      message: 'name must be a string',
       details: [
         {
           property: 'name',
@@ -54,7 +72,7 @@ describe('HTTP error contract', () => {
     });
   });
 
-  it('normalizes NestJS exceptions and unknown errors', () => {
+  it('normalizes standard NestJS exceptions with safe Turkish fallbacks', () => {
     const filter = new HttpExceptionFilter();
     const nestResponse = {
       status: jest.fn().mockReturnThis(),
@@ -63,8 +81,15 @@ describe('HTTP error contract', () => {
     filter.catch(new BadRequestException('bad input'), hostFor(nestResponse));
     expect(nestResponse.json).toHaveBeenCalledWith({
       statusCode: 400,
-      code: 'BAD_REQUEST',
-      message: 'bad input',
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'bad input',
+        type: 'BAD_REQUEST',
+        clientMessage: ClientMessage.BadRequest,
+      },
     });
 
     const notFoundResponse = {
@@ -74,21 +99,58 @@ describe('HTTP error contract', () => {
     filter.catch(new NotFoundException(), hostFor(notFoundResponse));
     expect(notFoundResponse.json).toHaveBeenCalledWith({
       statusCode: 404,
-      code: 'NOT_FOUND',
-      message: 'Cannot GET /api/v1/unknown',
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'Not Found',
+        type: 'NOT_FOUND',
+        clientMessage: ClientMessage.NotFound,
+      },
     });
 
+    const unauthorizedResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    filter.catch(new UnauthorizedException(), hostFor(unauthorizedResponse));
+    expect(unauthorizedResponse.json).toHaveBeenCalledWith({
+      statusCode: 401,
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'Unauthorized',
+        type: 'UNAUTHORIZED',
+        clientMessage: ClientMessage.Unauthorized,
+      },
+    });
+  });
+
+  it('returns and logs a safe envelope for unknown errors', () => {
+    const filter = new HttpExceptionFilter();
     const unknownResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
     const logger = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     filter.catch(new Error('secret internals'), hostFor(unknownResponse));
-    expect(unknownResponse.json).toHaveBeenCalledWith({
+    const payload = unknownResponse.json.mock.calls[0][0];
+    expect(payload).toEqual({
       statusCode: 500,
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Internal server error',
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'Internal server error',
+        type: 'INTERNAL_SERVER_ERROR',
+        clientMessage: ClientMessage.InternalServerError,
+      },
     });
+    expect(JSON.stringify(payload)).not.toContain('secret internals');
     expect(logger).toHaveBeenCalledWith('Unhandled application error');
     expect(logger.mock.calls.flat().join(' ')).not.toContain(
       'secret internals',
@@ -104,8 +166,15 @@ describe('HTTP error contract', () => {
     );
     expect(response.json).toHaveBeenCalledWith({
       statusCode: 429,
-      code: 'RATE_LIMITED',
-      message: 'Too many requests',
+      success: false,
+      timestamp: expect.any(String),
+      path: '/api/v1/unknown',
+      data: null,
+      error: {
+        message: 'Too many requests',
+        type: 'TOO_MANY_REQUESTS',
+        clientMessage: ClientMessage.TooManyRequests,
+      },
     });
   });
 });

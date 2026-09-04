@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GroupsModule } from '../groups/groups.module';
-import { MatchesController } from './matches.controller';
+import { MatchesController, MatchesMeController } from './matches.controller';
 import { MatchesService } from './matches.service';
 import { Match, MatchSchema } from './schemas/match.schema';
 @Module({
@@ -9,7 +9,7 @@ import { Match, MatchSchema } from './schemas/match.schema';
     GroupsModule,
     MongooseModule.forFeature([{ name: Match.name, schema: MatchSchema }]),
   ],
-  controllers: [MatchesController],
+  controllers: [MatchesController, MatchesMeController],
   providers: [MatchesService],
   exports: [MatchesService],
 })

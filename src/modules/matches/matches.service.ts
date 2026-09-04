@@ -83,6 +83,14 @@ export class MatchesService {
       await this.model.find({ groupId }).sort({ scheduledAt: 1, _id: 1 }).exec()
     ).map((m) => this.safe(m));
   }
+  async listForUser(userId: string) {
+    return (
+      await this.model
+        .find({ participantUserIds: userId })
+        .sort({ scheduledAt: 1, _id: 1 })
+        .exec()
+    ).map((m) => this.safe(m));
+  }
   async get(groupId: string, matchId: string, userId: string) {
     await this.groups.assertMember(groupId, userId);
     const m = await this.model.findOne({ _id: matchId, groupId }).exec();

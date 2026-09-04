@@ -1,7 +1,9 @@
 import { INestApplication, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApplication } from '../src/bootstrap';
+import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
 
@@ -18,7 +20,10 @@ describe('Auth registration endpoint (e2e)', () => {
 
   @Module({
     controllers: [AuthController],
-    providers: [{ provide: AuthService, useValue: { register } }],
+    providers: [
+      { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+      { provide: AuthService, useValue: { register } },
+    ],
   })
   class TestAuthModule {}
 
@@ -45,9 +50,18 @@ describe('Auth registration endpoint (e2e)', () => {
       .expect(201)
       .expect((response) => {
         expect(response.body).toEqual(
-          expect.objectContaining({ id: '1', email: 'mail@example.com' }),
+          expect.objectContaining({
+            statusCode: 201,
+            success: true,
+            path: '/api/v1/auth/register',
+            data: expect.objectContaining({
+              id: '1',
+              email: 'mail@example.com',
+            }),
+            error: null,
+          }),
         );
-        expect(response.body).not.toHaveProperty('passwordHash');
+        expect(response.body.data).not.toHaveProperty('passwordHash');
       }));
 
   it('rejects invalid registration data', () =>

@@ -14,7 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AcceptInvitationDto, InviteUserDto } from './dto/invitation.dto';
-import { GroupNameDto } from './dto/group.dto';
+import { CreateGroupDto, GroupNameDto } from './dto/group.dto';
 import { GroupsService } from './groups.service';
 import { Throttle } from '@nestjs/throttler';
 import { AUTH_RATE_LIMITS } from '../../common/security/rate-limit.constants';
@@ -26,7 +26,7 @@ import { AUTH_RATE_LIMITS } from '../../common/security/rate-limit.constants';
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
   @Post() create(
-    @Body() dto: GroupNameDto,
+    @Body() dto: CreateGroupDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.groupsService.create(dto, user.userId);

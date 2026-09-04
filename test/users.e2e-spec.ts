@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { INestApplication } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApplication } from '../src/bootstrap';
+import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { UsersController } from '../src/modules/users/users.controller';
 import { UsersService } from '../src/modules/users/users.service';
 
@@ -12,6 +15,8 @@ describe('Users endpoint (e2e)', () => {
   @Module({
     controllers: [UsersController],
     providers: [
+      { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+      { provide: APP_FILTER, useClass: HttpExceptionFilter },
       {
         provide: UsersService,
         useValue: {
@@ -49,18 +54,27 @@ describe('Users endpoint (e2e)', () => {
       .get('/api/v1/users/6658a63e957fdc8261e8912a')
       .expect(200)
       .expect((response) => {
-        expect(response.body).toHaveProperty('id', '1');
-        expect(response.body).not.toHaveProperty('passwordHash');
-        expect(response.body).not.toHaveProperty('_id');
+        expect(response.body.data).toHaveProperty('id', '1');
+        expect(response.body.data).not.toHaveProperty('passwordHash');
+        expect(response.body.data).not.toHaveProperty('_id');
       }));
 
   it('rejects invalid IDs', () =>
     request(app.getHttpServer())
       .get('/api/v1/users/not-an-id')
       .expect(400)
-      .expect({
-        statusCode: 400,
-        code: 'BAD_REQUEST',
-        message: 'Invalid MongoDB identifier',
+      .expect((response) => {
+        expect(response.body).toEqual({
+          statusCode: 400,
+          success: false,
+          timestamp: expect.any(String),
+          path: '/api/v1/users/not-an-id',
+          data: null,
+          error: {
+            message: 'Invalid MongoDB identifier',
+            type: 'BAD_REQUEST',
+            clientMessage: 'Geçersiz İstek.',
+          },
+        });
       }));
 });

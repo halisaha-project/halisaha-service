@@ -3,6 +3,9 @@ import { MatchStatus } from '../src/modules/matches/schemas/match.schema';
 import { GroupsService } from '../src/modules/groups/groups.service';
 import { Model } from 'mongoose';
 import { Match } from '../src/modules/matches/schemas/match.schema';
+import { MatchesMeController } from '../src/modules/matches/matches.controller';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
 
 const ids = (count: number) =>
   Array.from({ length: count }, (_, i) =>
@@ -52,6 +55,45 @@ function serviceFor(group = { ownerId: 'owner', memberIds: ids(30) }) {
 }
 
 describe('MatchesService', () => {
+  it('lists only matches containing the authenticated participant in scheduled order', async () => {
+    const h = serviceFor();
+    const participantMatch = match(['current-user']);
+    const exec = jest.fn().mockResolvedValue([participantMatch]);
+    const sort = jest.fn().mockReturnValue({ exec });
+    h.find.mockReturnValue({ sort });
+
+    await expect(h.service.listForUser('current-user')).resolves.toEqual([
+      expect.objectContaining({ name: 'Match' }),
+    ]);
+    expect(h.find).toHaveBeenCalledWith({
+      participantUserIds: 'current-user',
+    });
+    expect(sort).toHaveBeenCalledWith({ scheduledAt: 1, _id: 1 });
+  });
+
+  it('returns an empty array when the authenticated user has no matches', async () => {
+    const h = serviceFor();
+    const exec = jest.fn().mockResolvedValue([]);
+    h.find.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec }),
+    });
+
+    await expect(h.service.listForUser('current-user')).resolves.toEqual([]);
+  });
+
+  it('gets the match-list identity only from the authenticated user', async () => {
+    const listForUser = jest.fn().mockResolvedValue([]);
+    const controller = new MatchesMeController({ listForUser } as never);
+
+    await expect(
+      controller.listMine({ userId: 'authenticated-user' }),
+    ).resolves.toEqual([]);
+    expect(listForUser).toHaveBeenCalledWith('authenticated-user');
+    expect(Reflect.getMetadata(GUARDS_METADATA, MatchesMeController)).toContain(
+      JwtAuthGuard,
+    );
+  });
+
   it("atomically transitions an owner's ready match to completed", async () => {
     const h = serviceFor();
     h.findOneAndUpdate.mockReturnValue({
