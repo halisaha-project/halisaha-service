@@ -4,3 +4,4 @@ node_modules/
 .DS_Store
 
 dist/docs/reference/ARCHITECTURE_GUIDE.md
+ARCHITECTURE_GUIDE.md
